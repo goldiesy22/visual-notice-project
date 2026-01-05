@@ -16,8 +16,9 @@ else:
 
 genai.configure(api_key=GOOGLE_API_KEY)
 
-# 🚨 [수정 완료] 사용자님 목록에 있는 확실한 모델명으로 교체!
-model = genai.GenerativeModel('gemini-2.0-flash')
+# 🚨 [수정 완료] 정식 버전(Limit 0) 대신, 무료로 열려있는 '실험용(exp)' 버전 사용
+# 사용자님 목록에 있던 그 모델입니다!
+model = genai.GenerativeModel('gemini-2.0-flash-exp')
 
 ASSETS_DIR = "assets"
 st.set_page_config(page_title="모두의 알림장", page_icon="🏫", layout="wide")
@@ -44,7 +45,7 @@ def get_image_base64(image_path):
         return base64.b64encode(img_file.read()).decode('utf-8')
 
 # ==========================================
-# 3. 다국어 UI 사전 (안전을 위해 텍스트 라벨 사용)
+# 3. 다국어 UI 사전
 # ==========================================
 ui_lang = {
     "한국어": {
@@ -191,7 +192,7 @@ else:
     final_target_lang = lang_key
 
 # ==========================================
-# 5. 스타일 설정 (CSS) - 🚨 억지 꾸미기 제거 (순정 모드)
+# 5. 스타일 설정 (CSS)
 # ==========================================
 st.markdown("""
     <style>
@@ -201,7 +202,6 @@ st.markdown("""
         
         html, body, [class*="st-"] { font-size: 22px !important; }
 
-        /* [일반 버튼 꾸미기] - 파란색으로 통일 */
         div.stButton > button, 
         div[data-testid="stFileUploader"] button {
             background-color: #007BFF !important; 
@@ -211,16 +211,10 @@ st.markdown("""
             border-radius: 8px !important;
         }
 
-        /* [카메라 버튼 안전 정책]
-           카메라 내부의 버튼(전환, 촬영 등)을 억지로 건드리지 않습니다.
-           오직 '촬영 버튼(primary)'의 색깔만 파란색으로 바꿉니다.
-           이렇게 하면 전환 버튼이 망가질 일이 절대 없습니다.
-        */
         div[data-testid="stCameraInput"] button[kind="primary"] {
             background-color: #007BFF !important; 
             border: none !important;
             color: white !important;
-            /* 글씨를 숨기거나 아이콘을 넣지 않습니다. 순정 상태 유지 */
         }
     </style>
 """, unsafe_allow_html=True)
@@ -235,9 +229,8 @@ tab1, tab2 = st.tabs([current_ui['tab_camera'], current_ui['tab_upload']])
 img_file = None
 
 with tab1:
-    # ⚠️ 카메라 레이블을 확실하게 표시해줍니다.
     st.write(current_ui['cam_label'])
-    camera_img = st.camera_input("Camera", label_visibility="collapsed") # 라벨 숨김 처리로 깔끔하게
+    camera_img = st.camera_input("Camera", label_visibility="collapsed")
     if camera_img: img_file = camera_img
 with tab2:
     st.write(current_ui['upload_label'])
