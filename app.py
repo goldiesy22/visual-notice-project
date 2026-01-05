@@ -9,12 +9,16 @@ import io
 # 1. 설정 (Configuration)
 # ==========================================
 
-# ⚠️ [필수] API 키 확인 필수!
-GOOGLE_API_KEY = "여기에_새로운_API_키를_붙여넣으세요"
+# ⚠️ [수정됨] API 키를 Secrets에서 안전하게 가져오기
+if "GOOGLE_API_KEY" in st.secrets:
+    GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
+else:
+    st.error("🚨 API 키가 없습니다! Streamlit 웹사이트의 'Secrets' 설정을 확인해주세요.")
+    st.stop()
 
 genai.configure(api_key=GOOGLE_API_KEY)
 
-# 🚨 'gemini-2.5-flash' 사용 (안정성 + 성능 최적)
+# 🚨 사용자님이 선택하신 'gemini-2.5-flash' 모델 유지
 model = genai.GenerativeModel('gemini-2.5-flash') 
 
 ASSETS_DIR = "assets"
