@@ -42,13 +42,13 @@ def get_image_base64(image_path):
         return base64.b64encode(img_file.read()).decode('utf-8')
 
 # ==========================================
-# 3. 다국어 UI 사전 (아이콘 사용으로 단순화)
+# 3. 다국어 UI 사전 (안전을 위해 텍스트 라벨 사용)
 # ==========================================
 ui_lang = {
     "한국어": {
         "subtitle": "모든 가정을 위한 스마트 알림장<br><span class='subtitle-eng'>Smart Notice for All Families</span>",
-        "tab_camera": "📸 촬영", "tab_upload": "📂 앨범",
-        "cam_label": "⬇️ 아래 카메라 버튼을 눌러주세요",
+        "tab_camera": "📸 사진 찍기", "tab_upload": "📂 앨범",
+        "cam_label": "⬇️ 아래 버튼을 눌러 사진을 찍으세요",
         "upload_label": "⬇️ 아래 버튼을 눌러 앨범을 여세요",
         "result_header": "🎨 준비물 그림 확인",
         "summary_header": "📢 핵심 내용 요약", "trans_btn": "번역문 보기"
@@ -56,7 +56,7 @@ ui_lang = {
     "영어": {
         "subtitle": "Smart Notice for All Families",
         "tab_camera": "📸 Camera", "tab_upload": "📂 Upload",
-        "cam_label": "Please tap the camera button below",
+        "cam_label": "Please tap the button below",
         "upload_label": "Upload Image File",
         "result_header": "🎨 Supplies Icons",
         "summary_header": "📢 Summary", "trans_btn": "View Translation"
@@ -64,7 +64,7 @@ ui_lang = {
     "중국어": {
         "subtitle": "为所有家庭提供的智能通知",
         "tab_camera": "📸 拍照", "tab_upload": "📂 相册",
-        "cam_label": "请点击下方的相机按钮",
+        "cam_label": "请点击下方按钮",
         "upload_label": "请上传图片",
         "result_header": "🎨 准备物品图标",
         "summary_header": "📢 核心摘要", "trans_btn": "查看翻译"
@@ -72,7 +72,7 @@ ui_lang = {
     "베트남어": {
         "subtitle": "Thông báo thông minh cho mọi gia đình",
         "tab_camera": "📸 Chụp ảnh", "tab_upload": "📂 Tải lên",
-        "cam_label": "Vui lòng nhấn nút máy ảnh bên dưới",
+        "cam_label": "Vui lòng nhấn nút bên dưới",
         "upload_label": "Tải ảnh lên",
         "result_header": "🎨 Hình ảnh chuẩn bị",
         "summary_header": "📢 Tóm tắt nội dung", "trans_btn": "Xem bản dịch"
@@ -80,7 +80,7 @@ ui_lang = {
     "필리핀어": {
         "subtitle": "Smart Notification para sa Lahat ng Pamilya",
         "tab_camera": "📸 Kamera", "tab_upload": "📂 I-upload",
-        "cam_label": "Paki-pindot ang camera button sa ibaba",
+        "cam_label": "Paki-pindot ang button sa ibaba",
         "upload_label": "I-upload ang larawan",
         "result_header": "🎨 Mga Kailangan",
         "summary_header": "📢 Buod", "trans_btn": "Tingnan ang Salin"
@@ -88,7 +88,7 @@ ui_lang = {
     "태국어": {
         "subtitle": "การแจ้งเตือนอัจฉริยะสำหรับทุกครอบครัว",
         "tab_camera": "📸 กล้อง", "tab_upload": "📂 อัปโหลด",
-        "cam_label": "กรุณากดปุ่มกล้องด้านล่าง",
+        "cam_label": "กรุณากดปุ่มด้านล่าง",
         "upload_label": "อัปโหลดรูปภาพ",
         "result_header": "🎨 สิ่งที่ต้องเตรียม",
         "summary_header": "📢 สรุป", "trans_btn": "ดูคำแปล"
@@ -96,7 +96,7 @@ ui_lang = {
     "일본어": {
         "subtitle": "すべての家庭のためのスマート連絡帳",
         "tab_camera": "📸 カメラ", "tab_upload": "📂 アルバム",
-        "cam_label": "下のカメラボタンを押してください",
+        "cam_label": "下のボタンを押してください",
         "upload_label": "写真をアップロード",
         "result_header": "🎨 持ち物確認",
         "summary_header": "📢 要約", "trans_btn": "翻訳を見る"
@@ -104,7 +104,7 @@ ui_lang = {
     "러시아어": {
         "subtitle": "Умные уведомления для всех семей",
         "tab_camera": "📸 Камера", "tab_upload": "📂 Загрузить",
-        "cam_label": "Нажмите кнопку камеры ниже",
+        "cam_label": "Нажмите кнопку ниже",
         "upload_label": "Загрузить фото",
         "result_header": "🎨 Предметы",
         "summary_header": "📢 Сводка", "trans_btn": "Посмотреть перевод"
@@ -112,7 +112,7 @@ ui_lang = {
     "몽골어": {
         "subtitle": "Бүх гэр бүлд зориулсан ухаалаг мэдэгдэл",
         "tab_camera": "📸 Камер", "tab_upload": "📂 Хуулах",
-        "cam_label": "Доорх камерын товчийг дарна уу",
+        "cam_label": "Доорх товчийг дарна уу",
         "upload_label": "Зураг оруулах",
         "result_header": "🎨 Бэлтгэл зүйлс",
         "summary_header": "📢 Хураангуй", "trans_btn": "Орчуулгыг харах"
@@ -120,7 +120,7 @@ ui_lang = {
     "우즈베크어": {
         "subtitle": "Barcha oilalar uchun aqlli xabarnoma",
         "tab_camera": "📸 Kamera", "tab_upload": "📂 Yuklash",
-        "cam_label": "Quyidagi kamera tugmasini bosing",
+        "cam_label": "Quyidagi tugmani bosing",
         "upload_label": "Rasmni yuklash",
         "result_header": "🎨 Kerakli narsalar",
         "summary_header": "📢 Xulosa", "trans_btn": "Tarjimani ko'rish"
@@ -128,13 +128,14 @@ ui_lang = {
     "캄보디아어": {
         "subtitle": "ការជូនដំណឹងឆ្លាតវៃសម្រាប់គ្រួសារទាំងអស់",
         "tab_camera": "📸 កាមេរ៉ា", "tab_upload": "📂 ផ្ទុកឡើង",
-        "cam_label": "សូមចុចប៊ូតុងកាមេរ៉ាខាងក្រោម",
+        "cam_label": "សូមចុចប៊ូតុងខាងក្រោម",
         "upload_label": "បញ្ចូលរូបថត",
         "result_header": "🎨 សម្ភារៈ",
         "summary_header": "📢 សង្ខេប", "trans_btn": "មើលការបកប្រែ"
     }
 }
 
+# 언어 감지 및 매핑
 def get_ui_language(user_input):
     if not user_input: return ui_lang["한국어"]
     text = user_input.lower()
@@ -188,7 +189,7 @@ else:
     final_target_lang = lang_key
 
 # ==========================================
-# 5. 스타일 설정 (CSS) - 🚨 글씨 완전 소멸 & 아이콘 강제 적용
+# 5. 스타일 설정 (CSS) - 🚨 억지 꾸미기 제거 (순정 모드)
 # ==========================================
 st.markdown("""
     <style>
@@ -198,56 +199,26 @@ st.markdown("""
         
         html, body, [class*="st-"] { font-size: 22px !important; }
 
-        /* [1] 카메라 내부 버튼 초기화 (일단 다 투명하게) */
-        div[data-testid="stCameraInput"] button {
-            background-color: transparent !important;
-            border: none !important;
-            box-shadow: none !important;
-            color: transparent !important; /* 글씨 색도 투명하게 */
+        /* [일반 버튼 꾸미기] - 파란색으로 통일 */
+        div.stButton > button, 
+        div[data-testid="stFileUploader"] button {
+            background-color: #007BFF !important; 
+            color: white !important;
+            border: none !important; 
+            font-weight: bold !important; 
+            border-radius: 8px !important;
         }
 
-        /* [2] 🚨 중요: 오직 'kind=primary' (촬영 버튼)만 꾸미기 
-           - 전환 버튼(오른쪽 주황색 범인)은 primary가 아니라서 이 영향을 안 받음!
+        /* [카메라 버튼 안전 정책]
+           카메라 내부의 버튼(전환, 촬영 등)을 억지로 건드리지 않습니다.
+           오직 '촬영 버튼(primary)'의 색깔만 파란색으로 바꿉니다.
+           이렇게 하면 전환 버튼이 망가질 일이 절대 없습니다.
         */
         div[data-testid="stCameraInput"] button[kind="primary"] {
             background-color: #007BFF !important; 
-            border-radius: 50% !important; /* 동그랗게 */
-            width: 80px !important;
-            height: 80px !important;
-            margin: 0 auto !important;
-            
-            /* 글씨를 아예 0으로 만들어서 없애버림 (Hide Text) */
-            font-size: 0px !important; 
-            line-height: 0px !important;
-            text-indent: -9999px !important;
-        }
-
-        /* [3] 촬영 버튼 위에 📸 아이콘 덮어씌우기 */
-        div[data-testid="stCameraInput"] button[kind="primary"]::after {
-            content: "📸" !important;
-            font-size: 40px !important;
+            border: none !important;
             color: white !important;
-            display: block !important;
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%); /* 정가운데 배치 */
-            visibility: visible !important;
-            line-height: normal !important;
-        }
-
-        /* [4] 전환 버튼 복구 (혹시라도 색이 입혀졌을까봐 강제 투명화) */
-        div[data-testid="stCameraInput"] button:not([kind="primary"]) {
-            background: transparent !important;
-            color: inherit !important; /* 원래 아이콘 색상 사용 */
-            font-size: unset !important; /* 폰트 크기 복구 */
-            width: auto !important;
-            height: auto !important;
-        }
-
-        /* [5] 앨범 업로드 버튼 스타일 */
-        div[data-testid="stFileUploader"] button {
-            background-color: #007BFF !important; color: white !important;
-            border: none !important; font-weight: bold !important; border-radius: 8px !important;
+            /* 글씨를 숨기거나 아이콘을 넣지 않습니다. 순정 상태 유지 */
         }
     </style>
 """, unsafe_allow_html=True)
@@ -262,10 +233,13 @@ tab1, tab2 = st.tabs([current_ui['tab_camera'], current_ui['tab_upload']])
 img_file = None
 
 with tab1:
-    camera_img = st.camera_input(current_ui['cam_label'])
+    # ⚠️ 카메라 레이블을 확실하게 표시해줍니다.
+    st.write(current_ui['cam_label'])
+    camera_img = st.camera_input("Camera", label_visibility="collapsed") # 라벨 숨김 처리로 깔끔하게
     if camera_img: img_file = camera_img
 with tab2:
-    uploaded_img = st.file_uploader(current_ui['upload_label'], type=['png', 'jpg', 'jpeg'])
+    st.write(current_ui['upload_label'])
+    uploaded_img = st.file_uploader("Upload", type=['png', 'jpg', 'jpeg'], label_visibility="collapsed")
     if uploaded_img: img_file = uploaded_img
 
 # ==========================================
