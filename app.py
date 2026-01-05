@@ -12,7 +12,7 @@ import base64
 # ⚠️ [필수] 여기에 사용자님의 실제 API 키를 붙여넣으세요!
 GOOGLE_API_KEY = "AIzaSyBePQTVzbiFaPH7InG7pmkYr_3YCbaRfK0"
 
-# AI 모델: 1.5-flash (오류 없음, 안정적)
+# 🚨 AI 모델: 1.5-flash (오류 없음, 안정적)
 genai.configure(api_key=GOOGLE_API_KEY)
 model = genai.GenerativeModel('gemini-1.5-flash')
 
@@ -197,7 +197,7 @@ else:
         final_target_lang = lang_key
 
 # ==========================================
-# 5. 스타일 설정 (CSS) - 🚨 강력 초기화 버전
+# 5. 스타일 설정 (CSS) - 🚨 문제의 원인(포괄적 선택자) 제거 완료
 # ==========================================
 is_korean_mode = ("Korean" in final_target_lang) or (final_target_lang == "한국어")
 
@@ -214,7 +214,7 @@ if is_korean_mode:
         <style>
             html, body, [class*="st-"] { font-size: 22px !important; }
             
-            /* [공통] 일반 버튼 스타일 (카메라 제외) */
+            /* [공통 버튼] (카메라는 제외) */
             div.stButton > button, 
             div[data-testid="stFileUploader"] button {
                 background-color: #007BFF !important; color: white !important;
@@ -222,27 +222,14 @@ if is_korean_mode:
                 position: relative; overflow: hidden; 
             }
 
-            /* 🚨🚨 [강력 조치] 카메라 내부의 모든 버튼을 일단 '투명'하게 초기화 🚨🚨 */
-            /* 메인(primary)도 아니고, 다시찍기(secondary)도 아닌 모든 버튼(전환 버튼 포함)을 투명하게 만듦 */
-            div[data-testid="stCameraInput"] button:not([kind="primary"]):not([kind="secondary"]) {
-                background: transparent !important;
-                border: none !important;
-                box-shadow: none !important;
-                color: inherit !important;
-                width: auto !important;
-                text-indent: 0 !important;
-            }
-            /* 혹시 붙어있을지 모르는 가짜 글씨(::after) 제거 */
-            div[data-testid="stCameraInput"] button:not([kind="primary"]):not([kind="secondary"])::after {
-                content: none !important;
-                display: none !important;
-            }
+            /* 🚨🚨 중요: 'stCameraInput button' 같은 뭉뚱그린 선택자는 절대 사용 금지 🚨🚨 */
+            /* 오직 'primary' (메인 버튼) 만 콕 집어서 디자인합니다. */
+            /* 이렇게 하면 전환 버튼(primary가 아님)은 디자인 영향을 받을 수가 없습니다. */
 
-
-            /* 1. [사진찍기 버튼] 메인 버튼(primary)만 파란색 입히기 */
+            /* 1. [사진찍기 버튼] (kind="primary" 필수 체크) */
             div[data-testid="stCameraInput"] button[kind="primary"] {
                 background-color: #007BFF !important; 
-                text-indent: -9999px;
+                text-indent: -9999px; /* 영어 숨기기 */
                 padding: 40px 0px !important;
                 width: 100% !important;
                 border-radius: 8px !important;
@@ -262,7 +249,7 @@ if is_korean_mode:
                 background-color: #007BFF;
             }
 
-            /* 2. [다시 찍기 버튼] secondary 버튼만 디자인 */
+            /* 2. [다시 찍기 버튼] (kind="secondary" 필수 체크) */
             div[data-testid="stCameraInput"] button[kind="secondary"] {
                 text-indent: -9999px;
             }
