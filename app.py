@@ -8,10 +8,11 @@ import base64
 # ==========================================
 # 1. 보안 및 API 설정 (Secrets 사용)
 # ==========================================
+# 깃허브 보안을 위해 st.secrets 사용
 if "GOOGLE_API_KEY" in st.secrets:
     GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
 else:
-    st.error("🚨 API 키가 없습니다! Streamlit Secrets 설정을 확인해주세요.")
+    st.error("🚨 API 키가 없습니다! Streamlit 웹사이트의 'Secrets' 설정을 확인해주세요.")
     st.stop()
 
 genai.configure(api_key=GOOGLE_API_KEY)
@@ -42,7 +43,7 @@ def get_image_base64(image_path):
         return base64.b64encode(img_file.read()).decode('utf-8')
 
 # ==========================================
-# 3. 다국어 UI 사전 (빠짐없이 모두 포함!)
+# 3. 다국어 UI 사전 (11개국 언어 전체 포함)
 # ==========================================
 ui_lang = {
     "한국어": {
@@ -135,6 +136,7 @@ ui_lang = {
     }
 }
 
+# 언어 감지 로직 (매핑 기능 포함)
 def get_ui_language(user_input):
     if not user_input: return ui_lang["한국어"]
     text = user_input.lower()
