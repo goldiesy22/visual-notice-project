@@ -15,7 +15,7 @@ else:
     st.stop()
 
 genai.configure(api_key=GOOGLE_API_KEY)
-model = genai.GenerativeModel('gemini-1.5-flash')
+model = genai.GenerativeModel('gemini-1.5-flash-001')
 
 ASSETS_DIR = "assets"
 st.set_page_config(page_title="모두의 알림장", page_icon="🏫", layout="wide")
