@@ -12,7 +12,7 @@ import base64
 # ⚠️ [필수] 여기에 사용자님의 실제 API 키를 붙여넣으세요!
 GOOGLE_API_KEY = "AIzaSyBePQTVzbiFaPH7InG7pmkYr_3YCbaRfK0"
 
-# 🚨 [수정 완료] 오류 해결을 위해 '1.5-flash' 모델로 변경 (속도 빠름 + 무료 용량 넉넉)
+# 🚨 AI 모델: 1.5-flash 사용 (오류 방지)
 genai.configure(api_key=GOOGLE_API_KEY)
 model = genai.GenerativeModel('gemini-1.5-flash')
 
@@ -197,7 +197,7 @@ else:
         final_target_lang = lang_key
 
 # ==========================================
-# 5. 스타일 설정 (CSS) - 🚨 버튼 정밀 타겟팅 & 초기화
+# 5. 스타일 설정 (CSS) - 🚨 충돌 원인 제거 완료
 # ==========================================
 is_korean_mode = ("Korean" in final_target_lang) or (final_target_lang == "한국어")
 
@@ -216,38 +216,21 @@ if is_korean_mode:
             html, body, [class*="st-"] { font-size: 22px !important; }
             
             /* [공통] 기본 파란 버튼 스타일 */
-            div.stButton > button, button[kind="primary"],
+            /* 🚨 주의: div[data-testid="stCameraInput"] button 을 여기서 삭제했습니다! (충돌 원인) */
+            div.stButton > button, 
+            button[kind="primary"],
             div[data-testid="stFileUploader"] button {
                 background-color: #007BFF !important; color: white !important;
                 border: none !important; font-weight: bold !important; border-radius: 8px !important;
                 position: relative; overflow: hidden; 
             }
 
-            /* 🚨 1. [중요] 카메라 전환 버튼(Switch Camera) 강제 초기화 (갈색 버튼 방지) */
-            /* 툴팁이나 aria-label을 통해 전환 버튼을 감지하고 스타일을 뺍니다 */
-            div[data-testid="stCameraInput"] button[title="Switch camera"],
-            div[data-testid="stCameraInput"] button[aria-label="Switch camera"] {
-                background: transparent !important;
-                border: none !important;
-                color: inherit !important;
-                text-indent: 0 !important;
-                padding: 0 !important;
-                width: auto !important;
-                min-width: 0 !important;
-            }
-            /* 전환 버튼에 가상요소(::after)가 붙지 않도록 막음 */
-            div[data-testid="stCameraInput"] button[title="Switch camera"]::after,
-            div[data-testid="stCameraInput"] button[aria-label="Switch camera"]::after {
-                content: none !important;
-                display: none !important;
-            }
-
-            /* 🚨 2. [사진찍기 버튼] 메인 버튼(primary)만 타겟팅 */
+            /* 1. [사진찍기 버튼] 'primary'(메인) 버튼만 정확히 타겟팅 */
             div[data-testid="stCameraInput"] button[kind="primary"] {
                 background-color: #007BFF !important; 
                 text-indent: -9999px; /* 영어 숨기기 */
                 padding: 40px 0px !important;
-                width: 100% !important; /* 메인 버튼은 꽉 차게 */
+                width: 100% !important;
             }
             div[data-testid="stCameraInput"] button[kind="primary"]::after {
                 content: "📸 사진찍기";
@@ -264,9 +247,9 @@ if is_korean_mode:
                 background-color: #007BFF;
             }
 
-            /* 🚨 3. [다시 찍기 버튼] secondary 버튼만 타겟팅 */
+            /* 2. [다시 찍기 버튼] 'secondary' 버튼만 타겟팅 */
             div[data-testid="stCameraInput"] button[kind="secondary"] {
-                text-indent: -9999px; /* 영어 숨기기 */
+                text-indent: -9999px;
             }
             div[data-testid="stCameraInput"] button[kind="secondary"]::after {
                 content: "🗑 다시 찍기";
@@ -280,7 +263,7 @@ if is_korean_mode:
                 color: #333 !important;
             }
 
-            /* 4. [앨범 버튼] */
+            /* 3. [앨범 버튼] */
             [data-testid="stFileUploaderDropzone"] button {
                 text-indent: -9999px;
                 min-width: 180px !important;
