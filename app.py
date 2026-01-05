@@ -9,11 +9,10 @@ import base64
 # 1. 설정 (Configuration)
 # ==========================================
 
-# ⚠️ [필수] 아까 노출된 키 대신, 새로 받은 API 키를 여기에 넣으세요.
-# (지금은 해결이 우선이니 여기에 바로 넣어서 테스트하세요. 해결되면 그때 환경변수로 바꿉니다.)
+# ⚠️ [필수] 아까 새로 발급받으신 API 키를 따옴표 안에 붙여넣으세요!
 GOOGLE_API_KEY = "AIzaSyBePQTVzbiFaPH7InG7pmkYr_3YCbaRfK0"
 
-# AI 모델: 1.5-flash
+# 🚨 AI 모델: 1.5-flash (안정적, 무료 사용량 넉넉함)
 genai.configure(api_key=GOOGLE_API_KEY)
 model = genai.GenerativeModel('gemini-1.5-flash')
 
@@ -198,7 +197,7 @@ else:
         final_target_lang = lang_key
 
 # ==========================================
-# 5. 스타일 설정 (CSS) - 🚨 완벽 격리 (Whitelist Strategy)
+# 5. 스타일 설정 (CSS) - 🚨 Reset & Repaint 전략
 # ==========================================
 is_korean_mode = ("Korean" in final_target_lang) or (final_target_lang == "한국어")
 
@@ -215,49 +214,58 @@ if is_korean_mode:
         <style>
             html, body, [class*="st-"] { font-size: 22px !important; }
             
-            /* [일반 버튼] (단, 카메라 내부 버튼은 제외하기 위해 범위를 좁힘) */
-            /* div.stButton > button : 일반적인 버튼만 타겟팅 */
+            /* [1. 전역 설정] 앱 내의 모든 일반 버튼 스타일링 */
             div.stButton > button, 
             div[data-testid="stFileUploader"] button {
-                background-color: #007BFF !important; color: white !important;
-                border: none !important; font-weight: bold !important; border-radius: 8px !important;
-                position: relative; overflow: hidden; 
+                background-color: #007BFF !important; 
+                color: white !important;
+                border: none !important; 
+                font-weight: bold !important; 
+                border-radius: 8px !important;
+                position: relative; 
+                overflow: hidden; 
             }
 
-            /* 🚨🚨 [카메라 내부 완전 초기화] 🚨🚨 */
-            /* 카메라 컴포넌트 안의 '모든' 버튼 속성을 일단 투명하게 밀어버립니다. */
-            /* 여기서 모든 스타일을 빼버리기 때문에 전환 버튼은 무조건 투명해집니다. */
+            /* ============================================================
+               🚨 [2. 카메라 컴포넌트 스타일 초기화 (Reset)] 
+               카메라 내부의 '모든' 버튼 스타일을 투명하게 초기화합니다.
+               이 단계에서 '전환 버튼'이 정상적인 아이콘 상태로 돌아옵니다.
+               ============================================================ */
             div[data-testid="stCameraInput"] button {
-                background: transparent !important;
-                border: none !important;
+                background-color: transparent !important;
                 color: inherit !important;
+                border: none !important;
                 box-shadow: none !important;
                 text-indent: 0 !important;
-                width: auto !important;
                 padding: 0 !important;
+                margin: 0 !important;
+                width: auto !important;
             }
-            /* 카메라 내부 모든 버튼의 가상요소(글씨)도 삭제 */
+            /* 카메라 내부 모든 버튼의 가상 요소(가짜 글씨)도 일단 삭제 */
             div[data-testid="stCameraInput"] button::after {
                 content: none !important;
                 display: none !important;
             }
 
-            /* ----------------------------------------------------------------- */
-            /* 이제부터 '허락된 녀석들'만 다시 스타일을 입힙니다. (Whitelist) */
-            /* ----------------------------------------------------------------- */
+            /* ============================================================
+               🎨 [3. 주인공 버튼 재도색 (Whitelist)] 
+               초기화된 버튼 중, 우리가 원하는 버튼만 콕 집어서 디자인을 입힙니다.
+               ============================================================ */
 
-            /* 1. [사진찍기 버튼] (kind="primary" 인 경우에만) */
+            /* (A) 사진 찍기 버튼 (kind="primary" 신분증 확인) */
             div[data-testid="stCameraInput"] button[kind="primary"] {
                 background-color: #007BFF !important; 
-                text-indent: -9999px !important;
-                padding: 40px 0px !important;
+                text-indent: -9999px !important; /* 원래 글씨 숨기기 */
+                padding: 40px 0px !important;    /* 버튼 크기 키우기 */
                 width: 100% !important;
                 border-radius: 8px !important;
-                color: white !important; /* 다시 흰색으로 */
+                color: white !important;
             }
             div[data-testid="stCameraInput"] button[kind="primary"]::after {
                 content: "📸 사진찍기" !important;
-                display: flex !important;
+                text-indent: 0;
+                color: white !important;
+                display: flex;
                 justify-content: center;
                 align-items: center;
                 position: absolute;
@@ -266,16 +274,16 @@ if is_korean_mode:
                 font-size: 24px !important;
                 font-weight: bold;
                 background-color: #007BFF;
-                color: white !important;
             }
 
-            /* 2. [다시 찍기 버튼] (kind="secondary" 인 경우에만) */
+            /* (B) 다시 찍기/삭제 버튼 (kind="secondary" 신분증 확인) */
             div[data-testid="stCameraInput"] button[kind="secondary"] {
                 text-indent: -9999px !important;
             }
             div[data-testid="stCameraInput"] button[kind="secondary"]::after {
                 content: "🗑 다시 찍기" !important;
-                display: block !important;
+                text-indent: 0;
+                display: block;
                 position: absolute;
                 top: 50%; left: 50%;
                 transform: translate(-50%, -50%);
@@ -283,8 +291,8 @@ if is_korean_mode:
                 font-weight: bold;
                 color: #333 !important;
             }
-            
-            /* 3. [앨범 버튼] */
+
+            /* [4. 파일 업로드 버튼 스타일] */
             [data-testid="stFileUploaderDropzone"] button {
                 text-indent: -9999px;
                 min-width: 180px !important;
