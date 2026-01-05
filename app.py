@@ -12,7 +12,7 @@ import base64
 # ⚠️ [필수] 여기에 사용자님의 실제 API 키를 붙여넣으세요!
 GOOGLE_API_KEY = "AIzaSyBePQTVzbiFaPH7InG7pmkYr_3YCbaRfK0"
 
-# 🚨 AI 모델: 1.5-flash (안정적, 무료 할당량 넉넉함)
+# AI 모델: 1.5-flash
 genai.configure(api_key=GOOGLE_API_KEY)
 model = genai.GenerativeModel('gemini-1.5-flash')
 
@@ -197,7 +197,7 @@ else:
         final_target_lang = lang_key
 
 # ==========================================
-# 5. 스타일 설정 (CSS)
+# 5. 스타일 설정 (CSS) - 🚨 신분증 검사 방식 (언어 무관)
 # ==========================================
 is_korean_mode = ("Korean" in final_target_lang) or (final_target_lang == "한국어")
 
@@ -210,12 +210,11 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 if is_korean_mode:
-    # 🚨 [수정됨] 한국어 모드 CSS: 카메라 전환 버튼과 사진 찍기 버튼을 엄격하게 분리
     st.markdown("""
         <style>
             html, body, [class*="st-"] { font-size: 22px !important; }
             
-            /* [공통] 일반 버튼 스타일 (카메라 관련 버튼은 제외) */
+            /* [일반 버튼] (카메라는 제외) */
             div.stButton > button, 
             div[data-testid="stFileUploader"] button {
                 background-color: #007BFF !important; color: white !important;
@@ -223,36 +222,32 @@ if is_korean_mode:
                 position: relative; overflow: hidden; 
             }
 
-            /* ============================================================
-               🚨 [카메라 버튼 스타일링 핵심 수정 구간] 
-               ============================================================ */
-
-            /* 1. [카메라 전환 버튼 격리] - 투명하게 유지하고 글씨 제거 */
-            div[data-testid="stCameraInput"] button[aria-label="Switch camera"] {
+            /* 🚨🚨 [핵심 해결책] 신분증(kind) 없는 버튼은 무조건 초기화 🚨🚨 */
+            /* :not([kind]) -> kind 속성이 아예 없는 버튼(전환 버튼)을 잡아냅니다. */
+            div[data-testid="stCameraInput"] button:not([kind]) {
                 background-color: transparent !important;
                 border: none !important;
-                color: inherit !important; /* 아이콘 색상 유지 */
+                box-shadow: none !important;
+                color: inherit !important;
                 text-indent: 0 !important;
                 width: auto !important;
                 padding: 0 !important;
-                margin: 0 !important;
             }
-            /* 전환 버튼에 가짜 글씨가 붙지 않도록 강제 삭제 */
-            div[data-testid="stCameraInput"] button[aria-label="Switch camera"]::after {
+            /* 혹시 모르니 가짜 글씨도 삭제 */
+            div[data-testid="stCameraInput"] button:not([kind])::after {
                 content: none !important;
                 display: none !important;
             }
 
-            /* 2. [사진 찍기 버튼] - 전환 버튼이 '아닌(:not)' 것만 타겟팅 */
-            div[data-testid="stCameraInput"] button[kind="primary"]:not([aria-label="Switch camera"]) {
+            /* 1. [사진찍기 버튼] (kind="primary" 필수) */
+            div[data-testid="stCameraInput"] button[kind="primary"] {
                 background-color: #007BFF !important; 
-                text-indent: -9999px; /* 원래 영어 글씨 숨기기 */
+                text-indent: -9999px;
                 padding: 40px 0px !important;
                 width: 100% !important;
                 border-radius: 8px !important;
-                border: none !important;
             }
-            div[data-testid="stCameraInput"] button[kind="primary"]:not([aria-label="Switch camera"])::after {
+            div[data-testid="stCameraInput"] button[kind="primary"]::after {
                 content: "📸 사진찍기";
                 text-indent: 0;
                 color: white !important;
@@ -267,7 +262,7 @@ if is_korean_mode:
                 background-color: #007BFF;
             }
 
-            /* 3. [다시 찍기 버튼] */
+            /* 2. [다시 찍기 버튼] (kind="secondary" 필수) */
             div[data-testid="stCameraInput"] button[kind="secondary"] {
                 text-indent: -9999px;
             }
@@ -283,7 +278,7 @@ if is_korean_mode:
                 color: #333 !important;
             }
 
-            /* 4. [앨범 업로드 버튼] */
+            /* 3. [앨범 버튼] */
             [data-testid="stFileUploaderDropzone"] button {
                 text-indent: -9999px;
                 min-width: 180px !important;
@@ -308,7 +303,6 @@ if is_korean_mode:
         </style>
     """, unsafe_allow_html=True)
 else:
-    # 한국어가 아닐 때의 기본 스타일
     st.markdown("""
         <style>
             html, body, [class*="st-"] { font-size: 22px !important; }
