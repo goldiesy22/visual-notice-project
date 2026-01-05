@@ -82,13 +82,13 @@ st.markdown("""
         }
 
         /* ========================================
-          [아이콘 레이아웃 CSS - Flexbox]
+          [아이콘 레이아웃 CSS - Flexbox 강력 고정]
           ========================================
         */
         .icon-row-container {
             display: flex;
             flex-wrap: wrap;       
-            gap: 25px;             /* 간격 유지 */
+            gap: 30px;             /* 간격 조금 더 넓게 */
             justify-content: flex-start; 
             margin-bottom: 20px;
             padding: 10px 0;
@@ -98,12 +98,15 @@ st.markdown("""
             display: flex;
             flex-direction: column;
             align-items: center;
-            width: 90px; /* 🚨 너비 90px 고정 */
+            width: 90px;      /* 너비 90px */
+            flex-shrink: 0;   /* 🚨 [중요] 공간이 좁아도 절대 찌그러지지 않게 함 */
         }
 
         .unified-icon {
-            width: 90px;  /* 🚨 이미지 너비 90px 고정 */
-            height: 90px; /* 🚨 이미지 높이 90px 고정 */
+            width: 90px !important;  /* 🚨 강제 고정 */
+            height: 90px !important; /* 🚨 강제 고정 */
+            min-width: 90px;         /* 🚨 최소 크기 보장 */
+            min-height: 90px;        /* 🚨 최소 크기 보장 */
             object-fit: contain; 
             display: block;
         }
@@ -111,11 +114,11 @@ st.markdown("""
         .icon-text {
             text-align: center;
             font-weight: bold;
-            margin-top: 8px;
-            font-size: 16px; 
-            width: 100%;
+            margin-top: 10px;
+            font-size: 18px;    /* 글씨 크기 키움 */
+            width: 110px;       /* 글씨 박스는 이미지보다 살짝 넓게 */
             word-wrap: break-word; 
-            line-height: 1.2;
+            line-height: 1.3;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -349,18 +352,18 @@ if img_file and final_target_lang:
         raw_image = Image.open(img_file)
         image = resize_image_for_speed(raw_image)
         
+        # 🚨 [수정됨] 예시(Example)를 한국어로 변경하여 AI가 영어를 뱉지 않도록 유도
         output_format_example = """
         {
             "detected_lang": "Mongolian",
             "summary": "Margash...",
             "translation": "(Translation)",
             "keywords": [
-                {"file_key": "운동화", "display_word": "Sneakers", "emoji": "👟"}
+                {"file_key": "운동화", "display_word": "운동화 (Language)", "emoji": "👟"}
             ]
         }
         """
 
-        # 🚨 [수정됨] keywords에서 "3 key items"라는 개수 제한을 제거했습니다.
         prompt = f"""
         You are a smart assistant for school notices.
         
@@ -392,7 +395,9 @@ if img_file and final_target_lang:
         4. **keywords**: Extract **ALL** necessary supplies or key items mentioned in the notice.
            - **Constraint**: Do NOT limit the number. If there are 5 items, extract 5. If 1, extract 1. (Max 8 items).
            - "file_key": The word in **KOREAN** (Standard noun for file matching). e.g., "운동화".
-           - "display_word": The word in **'detected_lang'** (For display). e.g., "Sneakers".
+           - "display_word": The word in **'detected_lang'**. 
+             **IMPORTANT**: If 'detected_lang' is Korean, this MUST be in Korean. 
+             e.g., If detected_lang is English -> "Sneakers", If Korean -> "운동화".
            - "emoji": Matching emoji.
         
         [OUTPUT JSON]
@@ -412,7 +417,7 @@ if img_file and final_target_lang:
 
             st.divider()
             
-            # [결과 1] 준비물 아이콘 (Flexbox 적용)
+            # [결과 1] 준비물 아이콘 (Flexbox 적용 - 크기 고정)
             st.markdown(f"### {current_ui['result_header']}")
             
             keywords_data = data.get('keywords', [])
