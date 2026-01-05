@@ -3,28 +3,83 @@ import google.generativeai as genai
 from PIL import Image
 import os
 import json
-import base64
+import io
 
 # ==========================================
-# 1. 보안 및 API 설정 (Secrets 사용)
+# 1. 설정 (Configuration)
 # ==========================================
-if "GOOGLE_API_KEY" in st.secrets:
-    GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
-else:
-    st.error("🚨 API 키가 없습니다! Streamlit 웹사이트의 'Secrets' 설정을 확인해주세요.")
-    st.stop()
+
+# ⚠️ [필수] API 키 확인 필수!
+GOOGLE_API_KEY = "여기에_새로운_API_키를_붙여넣으세요"
 
 genai.configure(api_key=GOOGLE_API_KEY)
 
-# 🚨 [수정 완료] 정식 버전(Limit 0) 대신, 무료로 열려있는 '실험용(exp)' 버전 사용
-# 사용자님 목록에 있던 그 모델입니다!
-model = genai.GenerativeModel('gemini-2.0-flash-exp')
+# 🚨 'gemini-2.5-flash' 사용 (안정성 + 성능 최적)
+model = genai.GenerativeModel('gemini-2.5-flash') 
 
 ASSETS_DIR = "assets"
+
+# 페이지 설정
 st.set_page_config(page_title="모두의 알림장", page_icon="🏫", layout="wide")
 
 # ==========================================
-# 2. 필수 함수
+# 2. 스타일 설정 (CSS)
+# ==========================================
+st.markdown("""
+    <style>
+        html, body, [class*="st-"] { font-size: 22px !important; }
+        
+        /* 1. [공통] 파란색 버튼 스타일 */
+        div.stButton > button, 
+        button[kind="primary"],
+        div[data-testid="stCameraInput"] button {
+            background-color: #007BFF !important; 
+            color: white !important;
+            border: none !important;
+            font-weight: bold !important;
+            font-size: 20px !important;
+            padding: 10px 20px !important;
+            border-radius: 8px !important;
+        }
+        div.stButton > button:hover {
+            background-color: #0056b3 !important; 
+        }
+
+        /* 2. [한국어 모드 전용] 파일 업로더 텍스트 숨기기 */
+        [data-testid="stFileUploader"] section[data-testid="stFileUploaderDropzone"] > div > div > small {
+            display: none !important;
+        }
+
+        /* 부제목 스타일 */
+        .subtitle-text {
+            text-align: center; 
+            color: #555; 
+            margin-top: 0px; 
+            margin-bottom: 20px;
+            font-weight: bold; 
+            line-height: 1.5;
+        }
+        .subtitle-eng {
+            font-size: 1.0em; 
+            color: #555;      
+            display: block;   
+            margin-top: 5px;  
+        }
+        /* 요약 박스 스타일 */
+        .summary-box {
+            background-color: #F0F7FF; 
+            padding: 25px; 
+            border-radius: 15px; 
+            border: 3px solid #4A90E2; 
+            font-size: 24px; 
+            line-height: 1.8; 
+            color: #333;
+        }
+    </style>
+""", unsafe_allow_html=True)
+
+# ==========================================
+# 3. 기억 장치 & 콜백 함수 & 이미지 리사이징
 # ==========================================
 if 'custom_input' not in st.session_state:
     st.session_state['custom_input'] = ''
@@ -36,257 +91,328 @@ def resize_image_for_speed(image, max_width=800):
     try:
         w_percent = (max_width / float(image.size[0]))
         h_size = int((float(image.size[1]) * float(w_percent)))
-        return image.resize((max_width, h_size), Image.Resampling.LANCZOS)
-    except:
-        return image
-
-def get_image_base64(image_path):
-    with open(image_path, "rb") as img_file:
-        return base64.b64encode(img_file.read()).decode('utf-8')
+        resized_img = image.resize((max_width, h_size), Image.Resampling.LANCZOS)
+        return resized_img
+    except Exception as e:
+        return image 
 
 # ==========================================
-# 3. 다국어 UI 사전
+# 4. 다국어 UI 사전
 # ==========================================
 ui_lang = {
     "한국어": {
         "subtitle": "모든 가정을 위한 스마트 알림장<br><span class='subtitle-eng'>Smart Notice for All Families</span>",
-        "tab_camera": "📸 사진 찍기", "tab_upload": "📂 앨범",
-        "cam_label": "⬇️ 아래 버튼을 눌러 사진을 찍으세요",
-        "upload_label": "⬇️ 아래 버튼을 눌러 앨범을 여세요",
+        "tab_camera": "📸 사진 찍기", 
+        "tab_upload": "📂 앨범에서 가져오기", 
+        "cam_label": "알림장이나 안내문을 사진 찍어 주세요", 
+        "upload_label": "👇 여기를 눌러 앨범에서 사진을 고르세요",
         "result_header": "🎨 준비물 그림 확인",
         "summary_header": "📢 핵심 내용 요약", "trans_btn": "번역문 보기"
     },
-    "영어": {
+    "영어": { 
         "subtitle": "Smart Notice for All Families",
-        "tab_camera": "📸 Camera", "tab_upload": "📂 Upload",
-        "cam_label": "Please tap the button below",
+        "tab_camera": "📸 Take Photo", "tab_upload": "📂 Upload",
+        "cam_label": "Please take a photo of the notice", 
         "upload_label": "Upload Image File",
         "result_header": "🎨 Supplies Icons",
         "summary_header": "📢 Summary", "trans_btn": "View Translation"
     },
-    "중국어": {
+    "중국어": { 
         "subtitle": "为所有家庭提供的智能通知",
-        "tab_camera": "📸 拍照", "tab_upload": "📂 相册",
-        "cam_label": "请点击下方按钮",
-        "upload_label": "请上传图片",
+        "tab_camera": "📸 拍照", "tab_upload": "📂 上传照片",
+        "cam_label": "请拍摄通知单或公告", 
+        "upload_label": "上传照片",
         "result_header": "🎨 准备物品图标",
         "summary_header": "📢 核心摘要", "trans_btn": "查看翻译"
     },
-    "베트남어": {
+    "베트남어": { 
         "subtitle": "Thông báo thông minh cho mọi gia đình",
-        "tab_camera": "📸 Chụp ảnh", "tab_upload": "📂 Tải lên",
-        "cam_label": "Vui lòng nhấn nút bên dưới",
+        "tab_camera": "📸 Chụp ảnh", "tab_upload": "📂 Tải ảnh lên",
+        "cam_label": "Vui lòng chụp ảnh thông báo", 
         "upload_label": "Tải ảnh lên",
         "result_header": "🎨 Hình ảnh chuẩn bị",
         "summary_header": "📢 Tóm tắt nội dung", "trans_btn": "Xem bản dịch"
     },
-    "필리핀어": {
+    "필리핀어": { 
         "subtitle": "Smart Notification para sa Lahat ng Pamilya",
-        "tab_camera": "📸 Kamera", "tab_upload": "📂 I-upload",
-        "cam_label": "Paki-pindot ang button sa ibaba",
+        "tab_camera": "📸 Kumuha ng litrato", "tab_upload": "📂 I-upload",
+        "cam_label": "Paki-picturan ang notice o anunsyo", 
         "upload_label": "I-upload ang larawan",
         "result_header": "🎨 Mga Kailangan",
         "summary_header": "📢 Buod", "trans_btn": "Tingnan ang Salin"
     },
-    "태국어": {
+    "태국어": { 
         "subtitle": "การแจ้งเตือนอัจฉริยะสำหรับทุกครอบครัว",
-        "tab_camera": "📸 กล้อง", "tab_upload": "📂 อัปโหลด",
-        "cam_label": "กรุณากดปุ่มด้านล่าง",
+        "tab_camera": "📸 ถ่ายภาพ", "tab_upload": "📂 อัปโหลด",
+        "cam_label": "กรุณาถ่ายภาพประกาศ", 
         "upload_label": "อัปโหลดรูปภาพ",
         "result_header": "🎨 สิ่งที่ต้องเตรียม",
         "summary_header": "📢 สรุป", "trans_btn": "ดูคำแปล"
     },
     "일본어": {
         "subtitle": "すべての家庭のためのスマート連絡帳",
-        "tab_camera": "📸 カメラ", "tab_upload": "📂 アルバム",
-        "cam_label": "下のボタンを押してください",
+        "tab_camera": "📸 写真を撮る", "tab_upload": "📂 アルバム",
+        "cam_label": "連絡帳を撮影してください", 
         "upload_label": "写真をアップロード",
         "result_header": "🎨 持ち物確認",
         "summary_header": "📢 要約", "trans_btn": "翻訳を見る"
     },
-    "러시아어": {
+    "러시아어": { 
         "subtitle": "Умные уведомления для всех семей",
-        "tab_camera": "📸 Камера", "tab_upload": "📂 Загрузить",
-        "cam_label": "Нажмите кнопку ниже",
+        "tab_camera": "📸 Сделать фото", "tab_upload": "📂 Загрузить",
+        "cam_label": "Сфотографируйте уведомление", 
         "upload_label": "Загрузить фото",
         "result_header": "🎨 Предметы",
         "summary_header": "📢 Сводка", "trans_btn": "Посмотреть перевод"
     },
     "몽골어": {
         "subtitle": "Бүх гэр бүлд зориулсан ухаалаг мэдэгдэл",
-        "tab_camera": "📸 Камер", "tab_upload": "📂 Хуулах",
-        "cam_label": "Доорх товчийг дарна уу",
-        "upload_label": "Зураг оруулах",
+        "tab_camera": "📸 Зураг авах", "tab_upload": "📂 Байршуулах",
+        "cam_label": "Мэдэгдлийн зургийг авна уу", 
+        "upload_label": "Зураг байршуулах",
         "result_header": "🎨 Бэлтгэл зүйлс",
         "summary_header": "📢 Хураангуй", "trans_btn": "Орчуулгыг харах"
     },
-    "우즈베크어": {
+    "우즈베크어": { 
         "subtitle": "Barcha oilalar uchun aqlli xabarnoma",
-        "tab_camera": "📸 Kamera", "tab_upload": "📂 Yuklash",
-        "cam_label": "Quyidagi tugmani bosing",
+        "tab_camera": "📸 Rasmga olish", "tab_upload": "📂 Yuklash",
+        "cam_label": "E'lonni rasmga oling", 
         "upload_label": "Rasmni yuklash",
         "result_header": "🎨 Kerakli narsalar",
         "summary_header": "📢 Xulosa", "trans_btn": "Tarjimani ko'rish"
     },
-    "캄보디아어": {
+    "캄보디아어": { 
         "subtitle": "ការជូនដំណឹងឆ្លាតវៃសម្រាប់គ្រួសារទាំងអស់",
-        "tab_camera": "📸 កាមេរ៉ា", "tab_upload": "📂 ផ្ទុកឡើង",
-        "cam_label": "សូមចុចប៊ូតុងខាងក្រោម",
+        "tab_camera": "📸 ថតរូប", "tab_upload": "📂 ផ្ទុកឡើង",
+        "cam_label": "សូមថតរូបសេចក្តីជូនដំណឹង", 
         "upload_label": "បញ្ចូលរូបថត",
         "result_header": "🎨 សម្ភារៈ",
         "summary_header": "📢 សង្ខេប", "trans_btn": "មើលការបកប្រែ"
     }
 }
 
-# 언어 감지 및 매핑
+# ==========================================
+# 5. 스마트 UI 매칭 함수
+# ==========================================
 def get_ui_language(user_input):
     if not user_input: return ui_lang["한국어"]
     text = user_input.lower()
-    mapping = {
-        'china': '중국어', 'chinese': '중국어', 'taiwan': '중국어', '중국': '중국어',
-        'viet': '베트남어', '베트남': '베트남어',
-        'phil': '필리핀어', 'tagalog': '필리핀어', '필리핀': '필리핀어',
-        'thai': '태국어', '태국': '태국어',
-        'japan': '일본어', '일본': '일본어',
-        'russia': '러시아어', '러시아': '러시아어',
-        'mongol': '몽골어', '몽골': '몽골어',
-        'uzbek': '우즈베크어', '우즈벡': '우즈베크어',
-        'cambodia': '캄보디아어', 'khmer': '캄보디아어', '캄보디아': '캄보디아어'
-    }
-    for key, val in mapping.items():
-        if key in text: return ui_lang[val]
+
+    if any(x in text for x in ['china', 'chinese', 'taiwan', '중국', '대만']): return ui_lang["중국어"]
+    if any(x in text for x in ['viet', '베트남']): return ui_lang["베트남어"]
+    if any(x in text for x in ['phil', 'tagalog', '필리핀']): return ui_lang["필리핀어"]
+    if any(x in text for x in ['thai', '태국']): return ui_lang["태국어"]
+    if any(x in text for x in ['japan', '일본']): return ui_lang["일본어"]
+    if any(x in text for x in ['russia', '러시아', 'kazakh']): return ui_lang["러시아어"]
+    if any(x in text for x in ['mongol', '몽골']): return ui_lang["몽골어"]
+    if any(x in text for x in ['uzbek', '우즈벡']): return ui_lang["우즈베크어"]
+    if any(x in text for x in ['cambodia', 'khmer', '캄보디아']): return ui_lang["캄보디아어"]
+    
     return ui_lang["영어"]
 
 # ==========================================
-# 4. 메인 화면 구성
+# 6. [제목] 상단 배치
 # ==========================================
-st.markdown("<h1 style='color: #FF9F1C; text-align: center;'>🏫 모두의 AI 알림장</h1>", unsafe_allow_html=True)
+st.markdown("""
+    <h1 style='color: #FF9F1C; text-align: center; margin-bottom: 0px;'>🏫 모두의 AI 알림장</h1>
+""", unsafe_allow_html=True)
 
+# ==========================================
+# 7. 언어 선택 및 입력 로직
+# ==========================================
 st.markdown("### 🌍 언어를 선택하세요 (Language)")
+
 radio_options = [
-    "한국어 (Korean)", "중국어 (Chinese)", "베트남어 (Vietnamese)",
-    "영어 (English)", "필리핀어 (Tagalog)", "태국어 (Thai)",
-    "일본어 (Japanese)", "러시아어 (Russian)", "몽골어 (Mongolian)",
-    "우즈베크어 (Uzbek)", "캄보디아어 (Cambodian)", "직접 입력 (Type Language)"
+    "한국어 (Korean, 한국어)", 
+    "중국어 (Chinese, 中文)", 
+    "베트남어 (Vietnamese, Tiếng Việt)", 
+    "영어 (English, English)", 
+    "필리핀어 (Tagalog, Filipino)", 
+    "태국어 (Thai, ภาษาไทย)", 
+    "일본어 (Japanese, 日本語)", 
+    "러시아어 (Russian, Русский)", 
+    "몽골어 (Mongolian, Монгол хэл)", 
+    "우즈베크어 (Uzbek, Oʻzbekcha)", 
+    "캄보디아어 (Cambodian, ភាសាខ្មែរ)", 
+    "직접 입력 (Type Language)"
 ]
+
 selected_radio = st.radio("Label Hidden", radio_options, horizontal=False, label_visibility="collapsed")
 
 final_target_lang = "한국어"
 current_ui = ui_lang["한국어"]
 
-if "직접 입력" in selected_radio:
+if selected_radio == "직접 입력 (Type Language)":
     col1, col2 = st.columns([3, 1])
     with col1:
-        st.text_input("나라/언어 입력", placeholder="예: Nepal, France", key="widget_input", on_change=apply_input, label_visibility="collapsed")
+        st.text_input(
+            "나라/언어 입력", 
+            placeholder="예: France, Nepal",
+            label_visibility="collapsed",
+            key="widget_input",
+            on_change=apply_input 
+        )
     with col2:
-        st.button("적용", on_click=apply_input, use_container_width=True)
+        st.button("적용 (Apply)", on_click=apply_input, use_container_width=True)
     
     saved_val = st.session_state.get('custom_input', '').strip()
+    
     if saved_val:
         final_target_lang = saved_val
         current_ui = get_ui_language(final_target_lang)
+    else:
+        current_ui = ui_lang["한국어"]
+        final_target_lang = ""
 else:
-    st.session_state['custom_input'] = ''
+    st.session_state['custom_input'] = '' 
     lang_key = selected_radio.split(" ")[0]
     current_ui = ui_lang.get(lang_key, ui_lang["한국어"])
-    final_target_lang = lang_key
+    
+    if "(" in selected_radio:
+        final_target_lang = selected_radio.split("(")[1].split(",")[0].strip()
+    else:
+        final_target_lang = lang_key
+
+st.divider()
 
 # ==========================================
-# 5. 스타일 설정 (CSS)
+# 8. 메인 화면
 # ==========================================
-st.markdown("""
-    <style>
-        .unified-icon { width: 60px; height: 60px; object-fit: contain; display: block; margin: 0 auto; }
-        .unified-emoji-container { width: 60px; height: 60px; display: flex; justify-content: center; align-items: center; font-size: 50px; margin: 0 auto; }
-        .icon-text { text-align: center; font-weight: bold; margin-top: 8px; font-size: 18px; }
-        
-        html, body, [class*="st-"] { font-size: 22px !important; }
-
-        div.stButton > button, 
-        div[data-testid="stFileUploader"] button {
-            background-color: #007BFF !important; 
-            color: white !important;
-            border: none !important; 
-            font-weight: bold !important; 
-            border-radius: 8px !important;
-        }
-
-        div[data-testid="stCameraInput"] button[kind="primary"] {
-            background-color: #007BFF !important; 
-            border: none !important;
-            color: white !important;
-        }
-    </style>
+st.markdown(f"""
+    <div class='subtitle-text'><h3>{current_ui['subtitle']}</h3></div>
 """, unsafe_allow_html=True)
 
-# ==========================================
-# 6. 메인 기능 탭
-# ==========================================
-st.divider()
-st.markdown(f"<div class='subtitle-text'><h3>{current_ui['subtitle']}</h3></div>", unsafe_allow_html=True)
+st.write("") 
 
 tab1, tab2 = st.tabs([current_ui['tab_camera'], current_ui['tab_upload']])
 img_file = None
 
 with tab1:
-    st.write(current_ui['cam_label'])
-    camera_img = st.camera_input("Camera", label_visibility="collapsed")
+    camera_img = st.camera_input(current_ui['cam_label'])
     if camera_img: img_file = camera_img
 with tab2:
-    st.write(current_ui['upload_label'])
-    uploaded_img = st.file_uploader("Upload", type=['png', 'jpg', 'jpeg'], label_visibility="collapsed")
+    uploaded_img = st.file_uploader(current_ui['upload_label'], type=['png', 'jpg', 'jpeg'])
     if uploaded_img: img_file = uploaded_img
 
 # ==========================================
-# 7. AI 분석 및 결과 출력
+# 9. AI 분석 실행
 # ==========================================
 if img_file and final_target_lang:
     with st.spinner(f"🤖 AI가 분석 중입니다... (Target: {final_target_lang})"):
-        try:
-            raw_image = Image.open(img_file)
-            image = resize_image_for_speed(raw_image)
+        
+        raw_image = Image.open(img_file)
+        image = resize_image_for_speed(raw_image)
+        
+        output_format_example = """
+        {
+            "detected_lang": "Mongolian",
+            "summary": "Margash...",
+            "translation": "(Translation)",
+            "keywords": [
+                {"file_key": "운동화", "display_word": "Sneakers", "emoji": "👟"}
+            ]
+        }
+        """
 
-            prompt = f"""
-            Analyze this school notice image. Target Language: {final_target_lang}.
-            Output format: JSON.
-            Keys: detected_lang, summary(strict noun-ending style, translated labels), translation, keywords(3 items with file_key, display_word, emoji).
-            """
-            
+        # 🚨 [수정] 요약(Summary) 조건: 명사형 종결, 감성적 표현 금지, 핵심 정보 구조화
+        prompt = f"""
+        You are a smart assistant for school notices.
+        
+        [INPUT INFO]
+        User Input: "{final_target_lang}"
+        
+        [TASK 1: DETECT LANGUAGE]
+        1. Determine the target language based on user input.
+        
+        [TASK 2: PROCESSING]
+        1. **detected_lang**: Name of the language.
+        2. **summary**: 
+           - Write ONLY in 'detected_lang'.
+           - **Goal**: Summarize for elderly users (Easy to read), but **NEVER** use words like "Grandma(할머니)", "Grandchild(손주)". 
+           - **Style**: Strictly **Noun-ending (명사형)**. No full sentences (e.g., do not use '입니다', '하세요'). No conversational tone.
+           - **Format**:
+             [Title]
+             (Empty Line)
+             시간: MM. DD(Day)
+             장소: ...
+             준비물: ...
+             숙제: ...
+             (Add other keys if necessary)
+           - **Constraint**: Keep it concise. No long sentences.
+           - **Example**:
+             [현장학습 안내]
+             
+             시간: 5. 10(금)
+             장소: 시민공원
+             준비물: 도시락, 물, 돗자리
+           - Use '\\n' for line breaks.
+           
+        3. **translation**: Translate the FULL content into 'detected_lang'.
+        
+        4. **keywords**: Extract 3 key items.
+           - "file_key": The word in **KOREAN** (Standard noun for file matching). e.g., "운동화".
+           - "display_word": The word in **'detected_lang'** (For display). e.g., "Sneakers".
+           - "emoji": Matching emoji.
+        
+        [OUTPUT JSON]
+        {output_format_example}
+        """
+        
+        try:
             response = model.generate_content([prompt, image])
-            text_response = response.text.replace("```json", "").replace("```", "").strip()
-            data = json.loads(text_response)
+            
+            text_response = response.text
+            if "```json" in text_response:
+                text_response = text_response.split("```json")[1].split("```")[0]
+            elif "```" in text_response:
+                text_response = text_response.split("```")[1].split("```")[0]
+            
+            data = json.loads(text_response.strip(), strict=False)
 
             st.divider()
-            # 1. 준비물 아이콘
+            
+            # [결과 1] 아이콘
             st.markdown(f"### {current_ui['result_header']}")
             if 'keywords' in data:
                 cols = st.columns(len(data['keywords']))
                 for idx, item in enumerate(data['keywords']):
-                    file_key = item.get('file_key', '').strip()
-                    display_word = item.get('display_word', item.get('word', ''))
+                    
+                    file_key = item.get('file_key', '').strip() 
+                    display_word = item.get('display_word', item.get('word', '')) 
                     emoji = item.get('emoji', '❓')
                     icon_path = None
+                    
                     for ext in ['.png', '.jpg', '.jpeg']:
                         path = os.path.join(ASSETS_DIR, file_key + ext)
-                        if os.path.exists(path): icon_path = path; break
+                        if os.path.exists(path): 
+                            icon_path = path
+                            break
+                    
                     with cols[idx]:
-                        if icon_path:
-                            img_base64 = get_image_base64(icon_path)
-                            st.markdown(f"<img src='data:image/png;base64,{img_base64}' class='unified-icon'>", unsafe_allow_html=True)
-                        else:
-                            st.markdown(f"<div class='unified-emoji-container'>{emoji}</div>", unsafe_allow_html=True)
-                        st.markdown(f"<p class='icon-text'>{display_word}</p>", unsafe_allow_html=True)
+                        if icon_path: 
+                            st.image(icon_path, use_container_width=True)
+                        else: 
+                            st.markdown(f"<div style='font-size:60px; text-align:center;'>{emoji}</div>", unsafe_allow_html=True)
+                        st.markdown(f"<p style='text-align:center; font-weight:bold;'>{display_word}</p>", unsafe_allow_html=True)
 
-            # 2. 요약문
-            st.write("")
+            st.write("") 
+            
+            # [결과 2] 요약
             st.markdown(f"### {current_ui['summary_header']}")
             summary_text = data.get('summary', '요약 없음').replace('\n', '<br>')
-            st.markdown(f"<div class='summary-box'>{summary_text}</div>", unsafe_allow_html=True)
-
-            # 3. 번역문
+            st.markdown(f"""
+                <div class='summary-box'>
+                    {summary_text}
+                </div>
+            """, unsafe_allow_html=True)
+            
             st.write("")
-            with st.expander(f"🌍 {current_ui['trans_btn']}"):
-                st.write(data.get('translation', '번역 실패'))
-
+            
+            # [결과 3] 전체 번역문
+            detected = data.get('detected_lang', final_target_lang)
+            with st.expander(f"🌍 {current_ui['trans_btn']} ({detected})"):
+                st.markdown(f"<div style='font-size: 20px; line-height: 1.8;'>{data.get('translation', '번역 실패')}</div>", unsafe_allow_html=True)
+                
         except Exception as e:
-            st.error(f"오류가 발생했습니다: {str(e)}")
+            st.error("오류가 발생했습니다.")
+            st.markdown(f"<div class='error-details'>{str(e)}</div>", unsafe_allow_html=True)
