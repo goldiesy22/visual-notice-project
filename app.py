@@ -1,7 +1,3 @@
-# 업데이트 확인용 주석입니다
-import streamlit as st
-...
-
 import streamlit as st
 import google.generativeai as genai
 from PIL import Image
@@ -16,7 +12,7 @@ import base64
 # ⚠️ [필수] 여기에 사용자님의 실제 API 키를 붙여넣으세요!
 GOOGLE_API_KEY = "AIzaSyBePQTVzbiFaPH7InG7pmkYr_3YCbaRfK0"
 
-# 🚨 AI 모델: 1.5-flash 사용 (오류 방지)
+# AI 모델: 1.5-flash (오류 없음, 안정적)
 genai.configure(api_key=GOOGLE_API_KEY)
 model = genai.GenerativeModel('gemini-1.5-flash')
 
@@ -201,13 +197,12 @@ else:
         final_target_lang = lang_key
 
 # ==========================================
-# 5. 스타일 설정 (CSS) - 🚨 충돌 원인 제거 완료
+# 5. 스타일 설정 (CSS) - 🚨 강력 초기화 버전
 # ==========================================
 is_korean_mode = ("Korean" in final_target_lang) or (final_target_lang == "한국어")
 
 st.markdown("""
     <style>
-        /* 아이콘 통일 스타일 */
         .unified-icon { width: 60px; height: 60px; object-fit: contain; display: block; margin: 0 auto; }
         .unified-emoji-container { width: 60px; height: 60px; display: flex; justify-content: center; align-items: center; font-size: 50px; margin: 0 auto; }
         .icon-text { text-align: center; font-weight: bold; margin-top: 8px; font-size: 18px; }
@@ -219,22 +214,38 @@ if is_korean_mode:
         <style>
             html, body, [class*="st-"] { font-size: 22px !important; }
             
-            /* [공통] 기본 파란 버튼 스타일 */
-            /* 🚨 주의: div[data-testid="stCameraInput"] button 을 여기서 삭제했습니다! (충돌 원인) */
+            /* [공통] 일반 버튼 스타일 (카메라 제외) */
             div.stButton > button, 
-            button[kind="primary"],
             div[data-testid="stFileUploader"] button {
                 background-color: #007BFF !important; color: white !important;
                 border: none !important; font-weight: bold !important; border-radius: 8px !important;
                 position: relative; overflow: hidden; 
             }
 
-            /* 1. [사진찍기 버튼] 'primary'(메인) 버튼만 정확히 타겟팅 */
+            /* 🚨🚨 [강력 조치] 카메라 내부의 모든 버튼을 일단 '투명'하게 초기화 🚨🚨 */
+            /* 메인(primary)도 아니고, 다시찍기(secondary)도 아닌 모든 버튼(전환 버튼 포함)을 투명하게 만듦 */
+            div[data-testid="stCameraInput"] button:not([kind="primary"]):not([kind="secondary"]) {
+                background: transparent !important;
+                border: none !important;
+                box-shadow: none !important;
+                color: inherit !important;
+                width: auto !important;
+                text-indent: 0 !important;
+            }
+            /* 혹시 붙어있을지 모르는 가짜 글씨(::after) 제거 */
+            div[data-testid="stCameraInput"] button:not([kind="primary"]):not([kind="secondary"])::after {
+                content: none !important;
+                display: none !important;
+            }
+
+
+            /* 1. [사진찍기 버튼] 메인 버튼(primary)만 파란색 입히기 */
             div[data-testid="stCameraInput"] button[kind="primary"] {
                 background-color: #007BFF !important; 
-                text-indent: -9999px; /* 영어 숨기기 */
+                text-indent: -9999px;
                 padding: 40px 0px !important;
                 width: 100% !important;
+                border-radius: 8px !important;
             }
             div[data-testid="stCameraInput"] button[kind="primary"]::after {
                 content: "📸 사진찍기";
@@ -251,7 +262,7 @@ if is_korean_mode:
                 background-color: #007BFF;
             }
 
-            /* 2. [다시 찍기 버튼] 'secondary' 버튼만 타겟팅 */
+            /* 2. [다시 찍기 버튼] secondary 버튼만 디자인 */
             div[data-testid="stCameraInput"] button[kind="secondary"] {
                 text-indent: -9999px;
             }
@@ -286,7 +297,6 @@ if is_korean_mode:
                 font-weight: bold;
                 background-color: #007BFF;
             }
-
             [data-testid="stFileUploader"] section[data-testid="stFileUploaderDropzone"] > div > div > small {
                 display: none !important;
             }
