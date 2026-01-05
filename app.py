@@ -4,12 +4,13 @@ from PIL import Image
 import os
 import json
 import io
+import base64 
 
 # ==========================================
 # 1. 설정 (Configuration)
 # ==========================================
 
-# ⚠️ [수정됨] API 키를 Secrets에서 안전하게 가져오기
+# ⚠️ [필수] API 키 확인 (Secrets 사용)
 if "GOOGLE_API_KEY" in st.secrets:
     GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
 else:
@@ -39,10 +40,10 @@ st.markdown("""
         div[data-testid="stCameraInput"] button {
             background-color: #007BFF !important; 
             color: white !important;
-            border: none !important;
-            font-weight: bold !important;
-            font-size: 20px !important;
-            padding: 10px 20px !important;
+            border: none !important; 
+            font-weight: bold !important; 
+            font-size: 20px !important; 
+            padding: 10px 20px !important; 
             border-radius: 8px !important;
         }
         div.stButton > button:hover {
@@ -65,8 +66,8 @@ st.markdown("""
         }
         .subtitle-eng {
             font-size: 1.0em; 
-            color: #555;      
-            display: block;   
+            color: #555;       
+            display: block;    
             margin-top: 5px;  
         }
         /* 요약 박스 스타일 */
@@ -79,11 +80,48 @@ st.markdown("""
             line-height: 1.8; 
             color: #333;
         }
+
+        /* ========================================
+          [아이콘 레이아웃 CSS - Flexbox]
+          ========================================
+        */
+        .icon-row-container {
+            display: flex;
+            flex-wrap: wrap;       
+            gap: 25px;             /* 간격 유지 */
+            justify-content: flex-start; 
+            margin-bottom: 20px;
+            padding: 10px 0;
+        }
+
+        .icon-item-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 90px; /* 🚨 너비 90px 고정 */
+        }
+
+        .unified-icon {
+            width: 90px;  /* 🚨 이미지 너비 90px 고정 */
+            height: 90px; /* 🚨 이미지 높이 90px 고정 */
+            object-fit: contain; 
+            display: block;
+        }
+
+        .icon-text {
+            text-align: center;
+            font-weight: bold;
+            margin-top: 8px;
+            font-size: 16px; 
+            width: 100%;
+            word-wrap: break-word; 
+            line-height: 1.2;
+        }
     </style>
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 3. 기억 장치 & 콜백 함수 & 이미지 리사이징
+# 3. 필수 함수들
 # ==========================================
 if 'custom_input' not in st.session_state:
     st.session_state['custom_input'] = ''
@@ -99,6 +137,10 @@ def resize_image_for_speed(image, max_width=800):
         return resized_img
     except Exception as e:
         return image 
+
+def get_image_base64(image_path):
+    with open(image_path, "rb") as img_file:
+        return base64.b64encode(img_file.read()).decode('utf-8')
 
 # ==========================================
 # 4. 다국어 UI 사전
@@ -188,7 +230,7 @@ ui_lang = {
     "캄보디아어": { 
         "subtitle": "ការជូនដំណឹងឆ្លាតវៃសម្រាប់គ្រួសារទាំងអស់",
         "tab_camera": "📸 ថតរូប", "tab_upload": "📂 ផ្ទុកឡើង",
-        "cam_label": "សូមថតរូបសេចក្តីជូនដំណឹង", 
+        "cam_label": "សូមចុចប៊ូតុងកាមេរ៉ាខាងក្រោម", 
         "upload_label": "បញ្ចូលរូបថត",
         "result_header": "🎨 សម្ភារៈ",
         "summary_header": "📢 សង្ខេប", "trans_btn": "មើលការបកប្រែ"
@@ -318,7 +360,7 @@ if img_file and final_target_lang:
         }
         """
 
-        # 🚨 [수정] 요약(Summary) 조건: 명사형 종결, 감성적 표현 금지, 핵심 정보 구조화
+        # 🚨 [수정됨] keywords에서 "3 key items"라는 개수 제한을 제거했습니다.
         prompt = f"""
         You are a smart assistant for school notices.
         
@@ -343,17 +385,12 @@ if img_file and final_target_lang:
              숙제: ...
              (Add other keys if necessary)
            - **Constraint**: Keep it concise. No long sentences.
-           - **Example**:
-             [현장학습 안내]
-             
-             시간: 5. 10(금)
-             장소: 시민공원
-             준비물: 도시락, 물, 돗자리
            - Use '\\n' for line breaks.
            
         3. **translation**: Translate the FULL content into 'detected_lang'.
         
-        4. **keywords**: Extract 3 key items.
+        4. **keywords**: Extract **ALL** necessary supplies or key items mentioned in the notice.
+           - **Constraint**: Do NOT limit the number. If there are 5 items, extract 5. If 1, extract 1. (Max 8 items).
            - "file_key": The word in **KOREAN** (Standard noun for file matching). e.g., "운동화".
            - "display_word": The word in **'detected_lang'** (For display). e.g., "Sneakers".
            - "emoji": Matching emoji.
@@ -375,29 +412,39 @@ if img_file and final_target_lang:
 
             st.divider()
             
-            # [결과 1] 아이콘
+            # [결과 1] 준비물 아이콘 (Flexbox 적용)
             st.markdown(f"### {current_ui['result_header']}")
-            if 'keywords' in data:
-                cols = st.columns(len(data['keywords']))
-                for idx, item in enumerate(data['keywords']):
-                    
-                    file_key = item.get('file_key', '').strip() 
-                    display_word = item.get('display_word', item.get('word', '')) 
+            
+            keywords_data = data.get('keywords', [])
+            
+            if keywords_data:
+                html_content = '<div class="icon-row-container">'
+                
+                for item in keywords_data:
+                    file_key = item.get('file_key', '').strip()
+                    display_word = item.get('display_word', item.get('word', ''))
                     emoji = item.get('emoji', '❓')
-                    icon_path = None
                     
+                    icon_path = None
                     for ext in ['.png', '.jpg', '.jpeg']:
                         path = os.path.join(ASSETS_DIR, file_key + ext)
-                        if os.path.exists(path): 
-                            icon_path = path
-                            break
+                        if os.path.exists(path): icon_path = path; break
                     
-                    with cols[idx]:
-                        if icon_path: 
-                            st.image(icon_path, use_container_width=True)
-                        else: 
-                            st.markdown(f"<div style='font-size:60px; text-align:center;'>{emoji}</div>", unsafe_allow_html=True)
-                        st.markdown(f"<p style='text-align:center; font-weight:bold;'>{display_word}</p>", unsafe_allow_html=True)
+                    html_content += '<div class="icon-item-box">'
+                    
+                    if icon_path:
+                        img_base64 = get_image_base64(icon_path)
+                        html_content += f"<img src='data:image/png;base64,{img_base64}' class='unified-icon'>"
+                    else:
+                        html_content += f"<div class='unified-icon' style='font-size: 50px; display: flex; align-items: center; justify-content: center;'>{emoji}</div>"
+                        
+                    html_content += f"<p class='icon-text'>{display_word}</p>"
+                    html_content += '</div>'
+
+                html_content += '</div>'
+                st.markdown(html_content, unsafe_allow_html=True)
+            else:
+                 st.info("아이콘으로 표시할 내용이 없습니다.")
 
             st.write("") 
             
