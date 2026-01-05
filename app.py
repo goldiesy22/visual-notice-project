@@ -9,17 +9,12 @@ import base64
 # 1. 설정 (Configuration)
 # ==========================================
 
-# ⚠️ [중요] 아래 따옴표("") 안에 사용자님의 실제 API 키를 붙여넣으세요.
+# ⚠️ [필수] 여기에 사용자님의 실제 API 키를 붙여넣으세요!
 GOOGLE_API_KEY = "AIzaSyBePQTVzbiFaPH7InG7pmkYr_3YCbaRfK0"
-
-# API 키가 정상적으로 있는지 확인하는 로직
-if not GOOGLE_API_KEY or GOOGLE_API_KEY == "여기에_새로운_API_키를_붙여넣으세요":
-    st.error("🚨 API 키가 입력되지 않았습니다! 코드 맨 윗부분의 GOOGLE_API_KEY 변수에 키를 넣어주세요.")
-    st.stop() 
 
 # API 설정 및 모델 준비
 genai.configure(api_key=GOOGLE_API_KEY)
-model = genai.GenerativeModel('gemini-2.5-flash')
+model = genai.GenerativeModel('gemini-1.5-flash')
 
 ASSETS_DIR = "assets"
 
@@ -47,19 +42,6 @@ def resize_image_for_speed(image, max_width=800):
 def get_image_base64(image_path):
     with open(image_path, "rb") as img_file:
         return base64.b64encode(img_file.read()).decode('utf-8')
-
-# 이미지 비율을 계산해서 '확대 비율(Scale)'을 알려주는 함수
-def get_visual_scale(image_path):
-    try:
-        with Image.open(image_path) as img:
-            w, h = img.size
-            ratio = h / w 
-            if ratio > 1.8: return 1.6   # 매우 홀쭉함
-            elif ratio > 1.4: return 1.4 # 조금 홀쭉함
-            elif ratio > 1.1: return 1.2 # 약간 긺
-            else: return 1.0             # 정사각형
-    except:
-        return 1.0
 
 # ==========================================
 # 3. 다국어 UI 사전
@@ -222,63 +204,32 @@ is_korean_mode = ("Korean" in final_target_lang) or (final_target_lang == "한�
 st.markdown("""
     <style>
         /* 아이콘 통일 스타일 */
-        .unified-icon-container {
-            width: 90px;
-            height: 90px;
-            margin: 0 auto;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            overflow: visible; 
-        }
-        
-        .unified-icon {
-            max-width: 90px;
-            max-height: 90px;
-            object-fit: contain;
-            display: block;
-        }
-
-        .unified-emoji-container {
-            width: 90px;
-            height: 90px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 70px;
-            margin: 0 auto;
-        }
-
-        .icon-text {
-            text-align: center;
-            font-weight: bold;
-            margin-top: 8px;
-            font-size: 18px;
-        }
+        .unified-icon { width: 60px; height: 60px; object-fit: contain; display: block; margin: 0 auto; }
+        .unified-emoji-container { width: 60px; height: 60px; display: flex; justify-content: center; align-items: center; font-size: 50px; margin: 0 auto; }
+        .icon-text { text-align: center; font-weight: bold; margin-top: 8px; font-size: 18px; }
     </style>
 """, unsafe_allow_html=True)
-
 
 if is_korean_mode:
     st.markdown("""
         <style>
             html, body, [class*="st-"] { font-size: 22px !important; }
             
+            /* [공통] 기본 파란 버튼 */
             div.stButton > button, button[kind="primary"],
-            div[data-testid="stCameraInput"] button,
             div[data-testid="stFileUploader"] button {
                 background-color: #007BFF !important; color: white !important;
                 border: none !important; font-weight: bold !important; border-radius: 8px !important;
-                position: relative;
-                overflow: hidden; 
+                position: relative; overflow: hidden; 
             }
 
-            /* [사진찍기 버튼] */
-            div[data-testid="stCameraInput"] button {
+            /* 1. [사진찍기 버튼] 메인 버튼(kind=primary)만 타겟팅 (카메라 전환 버튼 등 제외) */
+            div[data-testid="stCameraInput"] button[kind="primary"] {
+                background-color: #007BFF !important; 
                 text-indent: -9999px;
                 padding: 40px 0px !important;
             }
-            div[data-testid="stCameraInput"] button::after {
+            div[data-testid="stCameraInput"] button[kind="primary"]::after {
                 content: "📸 사진찍기";
                 text-indent: 0;
                 color: white !important;
@@ -293,7 +244,22 @@ if is_korean_mode:
                 background-color: #007BFF;
             }
 
-            /* [앨범 버튼] */
+            /* 1-1. [삭제/다시찍기 버튼] 'Clear photo'를 '다시 찍기'로 변경 */
+            div[data-testid="stCameraInput"] button[kind="secondary"] {
+                text-indent: -9999px;
+            }
+            div[data-testid="stCameraInput"] button[kind="secondary"]::after {
+                content: "🗑 다시 찍기";
+                text-indent: 0;
+                display: block;
+                position: absolute;
+                top: 50%; left: 50%;
+                transform: translate(-50%, -50%);
+                font-size: 18px !important;
+                font-weight: bold;
+            }
+
+            /* 2. [앨범 버튼] */
             [data-testid="stFileUploaderDropzone"] button {
                 text-indent: -9999px;
                 min-width: 180px !important;
@@ -379,7 +345,6 @@ if img_file and final_target_lang:
             }
             """
 
-            # 🚨 [수정] 프롬프트: '3개' 제한 해제 -> '발견된 모든 것(Extract ALL valid supplies)'
             prompt = f"""
             You are a smart assistant for school notices.
 
@@ -394,27 +359,29 @@ if img_file and final_target_lang:
             2. **summary**:
                - **Language**: Write STRICTLY in 'detected_lang'.
                - **CRITICAL**: Translate ALL labels (Time, Place, Supplies, Homework) into 'detected_lang'.
+                 (e.g., If 'detected_lang' is English, use "Time:", NOT "시간:").
                - **Prohibition**: Do NOT use Korean characters if 'detected_lang' is not Korean.
-               - **Goal**: Summarize for elderly users (Easy to read), but **NEVER** use words like "Grandma".
+               - **Goal**: Summarize for elderly users (Easy to read), but **NEVER** use words like "Grandma(할머니)".
                - **Style**: Strictly **Noun-ending (명사형)**. No full sentences.
                - **Format Example (Target: English)**:
                  [Field Trip Notice]
-                 Time: May 10th
-                 Place: Park
-                 Supplies: Lunch box
+
+                 Time: May 10th (Fri)
+                 Place: Citizen Park
+                 Supplies: Lunch box, Water
                - **Format Example (Target: Korean)**:
                  [현장학습 안내]
+
                  시간: 5. 10(금)
                  장소: 시민공원
-                 준비물: 도시락
+                 준비물: 도시락, 물
+               - Use '\\n' for line breaks.
 
             3. **translation**: Translate the FULL content into 'detected_lang'.
 
-            4. **keywords**: Extract ALL valid physical supplies found in the text.
-               - **Do NOT limit to 3 items.** If there is 1, return 1. If there are 5, return 5.
-               - Ignore abstract words (e.g., "Passion", "Love").
-               - "file_key": The word in **KOREAN** (Standard noun). e.g., "운동화".
-               - "display_word": The word in **'detected_lang'**. e.g., "Sneakers".
+            4. **keywords**: Extract 3 key items.
+               - "file_key": The word in **KOREAN** (Standard noun for file matching). e.g., "운동화".
+               - "display_word": The word in **'detected_lang'** (For display). e.g., "Sneakers".
                - "emoji": Matching emoji.
 
             [OUTPUT JSON]
@@ -433,20 +400,15 @@ if img_file and final_target_lang:
 
                 st.divider()
 
-                # [결과 1] 아이콘 출력 (개수에 맞게 자동 배치)
+                # [결과 1] 아이콘 출력
                 st.markdown(f"### {current_ui['result_header']}")
-                
-                if 'keywords' in data and len(data['keywords']) > 0:
-                    # 🚨 아이콘 개수만큼 컬럼 자동 생성
+                if 'keywords' in data:
                     cols = st.columns(len(data['keywords']))
-                    
                     for idx, item in enumerate(data['keywords']):
                         file_key = item.get('file_key', '').strip()
                         display_word = item.get('display_word', item.get('word', ''))
                         emoji = item.get('emoji', '❓')
                         icon_path = None
-                        
-                        # 아이콘 파일 찾기
                         for ext in ['.png', '.jpg', '.jpeg']:
                             path = os.path.join(ASSETS_DIR, file_key + ext)
                             if os.path.exists(path):
@@ -455,15 +417,7 @@ if img_file and final_target_lang:
                         with cols[idx]:
                             if icon_path:
                                 img_base64 = get_image_base64(icon_path)
-                                scale_factor = get_visual_scale(icon_path)
-                                img_html = f"""
-                                    <div class='unified-icon-container'>
-                                        <img src='data:image/png;base64,{img_base64}' 
-                                             class='unified-icon' 
-                                             style='transform: scale({scale_factor});'>
-                                    </div>
-                                """
-                                st.markdown(img_html, unsafe_allow_html=True)
+                                st.markdown(f"<img src='data:image/png;base64,{img_base64}' class='unified-icon'>", unsafe_allow_html=True)
                             else:
                                 st.markdown(f"<div class='unified-emoji-container'>{emoji}</div>", unsafe_allow_html=True)
                             
