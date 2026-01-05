@@ -197,7 +197,7 @@ else:
         final_target_lang = lang_key
 
 # ==========================================
-# 5. 스타일 설정 (CSS) - 🚨 문제의 원인을 '정확히 저격'하여 수정
+# 5. 스타일 설정 (CSS)
 # ==========================================
 is_korean_mode = ("Korean" in final_target_lang) or (final_target_lang == "한국어")
 
@@ -210,11 +210,12 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 if is_korean_mode:
+    # 🚨 [수정됨] 한국어 모드 CSS: 카메라 전환 버튼과 사진 찍기 버튼을 엄격하게 분리
     st.markdown("""
         <style>
             html, body, [class*="st-"] { font-size: 22px !important; }
             
-            /* 1. [일반 버튼 스타일] - 카메라는 제외합니다. */
+            /* [공통] 일반 버튼 스타일 (카메라 관련 버튼은 제외) */
             div.stButton > button, 
             div[data-testid="stFileUploader"] button {
                 background-color: #007BFF !important; color: white !important;
@@ -222,8 +223,11 @@ if is_korean_mode:
                 position: relative; overflow: hidden; 
             }
 
-            /* 🚨🚨 [핵심 해결책] 카메라 전환 버튼(Switch camera) 격리 조치 🚨🚨 */
-            /* aria-label="Switch camera"를 가진 버튼은 무조건 투명하게 만들고 글씨(::after)를 없앱니다. */
+            /* ============================================================
+               🚨 [카메라 버튼 스타일링 핵심 수정 구간] 
+               ============================================================ */
+
+            /* 1. [카메라 전환 버튼 격리] - 투명하게 유지하고 글씨 제거 */
             div[data-testid="stCameraInput"] button[aria-label="Switch camera"] {
                 background-color: transparent !important;
                 border: none !important;
@@ -231,21 +235,24 @@ if is_korean_mode:
                 text-indent: 0 !important;
                 width: auto !important;
                 padding: 0 !important;
+                margin: 0 !important;
             }
+            /* 전환 버튼에 가짜 글씨가 붙지 않도록 강제 삭제 */
             div[data-testid="stCameraInput"] button[aria-label="Switch camera"]::after {
-                content: none !important; /* 가짜 글씨 삭제 */
+                content: none !important;
                 display: none !important;
             }
 
-            /* 2. [사진찍기 버튼] - 정확히 kind="primary"인 것만 타겟팅 */
-            div[data-testid="stCameraInput"] button[kind="primary"] {
+            /* 2. [사진 찍기 버튼] - 전환 버튼이 '아닌(:not)' 것만 타겟팅 */
+            div[data-testid="stCameraInput"] button[kind="primary"]:not([aria-label="Switch camera"]) {
                 background-color: #007BFF !important; 
-                text-indent: -9999px; /* 영어 숨기기 */
+                text-indent: -9999px; /* 원래 영어 글씨 숨기기 */
                 padding: 40px 0px !important;
                 width: 100% !important;
                 border-radius: 8px !important;
+                border: none !important;
             }
-            div[data-testid="stCameraInput"] button[kind="primary"]::after {
+            div[data-testid="stCameraInput"] button[kind="primary"]:not([aria-label="Switch camera"])::after {
                 content: "📸 사진찍기";
                 text-indent: 0;
                 color: white !important;
@@ -260,7 +267,7 @@ if is_korean_mode:
                 background-color: #007BFF;
             }
 
-            /* 3. [다시 찍기 버튼] - 정확히 kind="secondary"인 것만 타겟팅 */
+            /* 3. [다시 찍기 버튼] */
             div[data-testid="stCameraInput"] button[kind="secondary"] {
                 text-indent: -9999px;
             }
@@ -276,7 +283,7 @@ if is_korean_mode:
                 color: #333 !important;
             }
 
-            /* 4. [앨범 버튼] */
+            /* 4. [앨범 업로드 버튼] */
             [data-testid="stFileUploaderDropzone"] button {
                 text-indent: -9999px;
                 min-width: 180px !important;
@@ -301,6 +308,7 @@ if is_korean_mode:
         </style>
     """, unsafe_allow_html=True)
 else:
+    # 한국어가 아닐 때의 기본 스타일
     st.markdown("""
         <style>
             html, body, [class*="st-"] { font-size: 22px !important; }
