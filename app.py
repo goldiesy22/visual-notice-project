@@ -9,7 +9,8 @@ import base64
 # 1. 설정 (Configuration)
 # ==========================================
 
-# ⚠️ [필수] 여기에 사용자님의 실제 API 키를 붙여넣으세요!
+# ⚠️ [필수] 아까 노출된 키 대신, 새로 받은 API 키를 여기에 넣으세요.
+# (지금은 해결이 우선이니 여기에 바로 넣어서 테스트하세요. 해결되면 그때 환경변수로 바꿉니다.)
 GOOGLE_API_KEY = "AIzaSyBePQTVzbiFaPH7InG7pmkYr_3YCbaRfK0"
 
 # AI 모델: 1.5-flash
@@ -197,7 +198,7 @@ else:
         final_target_lang = lang_key
 
 # ==========================================
-# 5. 스타일 설정 (CSS) - 🚨 신분증 검사 방식 (언어 무관)
+# 5. 스타일 설정 (CSS) - 🚨 완벽 격리 (Whitelist Strategy)
 # ==========================================
 is_korean_mode = ("Korean" in final_target_lang) or (final_target_lang == "한국어")
 
@@ -214,7 +215,8 @@ if is_korean_mode:
         <style>
             html, body, [class*="st-"] { font-size: 22px !important; }
             
-            /* [일반 버튼] (카메라는 제외) */
+            /* [일반 버튼] (단, 카메라 내부 버튼은 제외하기 위해 범위를 좁힘) */
+            /* div.stButton > button : 일반적인 버튼만 타겟팅 */
             div.stButton > button, 
             div[data-testid="stFileUploader"] button {
                 background-color: #007BFF !important; color: white !important;
@@ -222,36 +224,40 @@ if is_korean_mode:
                 position: relative; overflow: hidden; 
             }
 
-            /* 🚨🚨 [핵심 해결책] 신분증(kind) 없는 버튼은 무조건 초기화 🚨🚨 */
-            /* :not([kind]) -> kind 속성이 아예 없는 버튼(전환 버튼)을 잡아냅니다. */
-            div[data-testid="stCameraInput"] button:not([kind]) {
-                background-color: transparent !important;
+            /* 🚨🚨 [카메라 내부 완전 초기화] 🚨🚨 */
+            /* 카메라 컴포넌트 안의 '모든' 버튼 속성을 일단 투명하게 밀어버립니다. */
+            /* 여기서 모든 스타일을 빼버리기 때문에 전환 버튼은 무조건 투명해집니다. */
+            div[data-testid="stCameraInput"] button {
+                background: transparent !important;
                 border: none !important;
-                box-shadow: none !important;
                 color: inherit !important;
+                box-shadow: none !important;
                 text-indent: 0 !important;
                 width: auto !important;
                 padding: 0 !important;
             }
-            /* 혹시 모르니 가짜 글씨도 삭제 */
-            div[data-testid="stCameraInput"] button:not([kind])::after {
+            /* 카메라 내부 모든 버튼의 가상요소(글씨)도 삭제 */
+            div[data-testid="stCameraInput"] button::after {
                 content: none !important;
                 display: none !important;
             }
 
-            /* 1. [사진찍기 버튼] (kind="primary" 필수) */
+            /* ----------------------------------------------------------------- */
+            /* 이제부터 '허락된 녀석들'만 다시 스타일을 입힙니다. (Whitelist) */
+            /* ----------------------------------------------------------------- */
+
+            /* 1. [사진찍기 버튼] (kind="primary" 인 경우에만) */
             div[data-testid="stCameraInput"] button[kind="primary"] {
                 background-color: #007BFF !important; 
-                text-indent: -9999px;
+                text-indent: -9999px !important;
                 padding: 40px 0px !important;
                 width: 100% !important;
                 border-radius: 8px !important;
+                color: white !important; /* 다시 흰색으로 */
             }
             div[data-testid="stCameraInput"] button[kind="primary"]::after {
-                content: "📸 사진찍기";
-                text-indent: 0;
-                color: white !important;
-                display: flex;
+                content: "📸 사진찍기" !important;
+                display: flex !important;
                 justify-content: center;
                 align-items: center;
                 position: absolute;
@@ -260,16 +266,16 @@ if is_korean_mode:
                 font-size: 24px !important;
                 font-weight: bold;
                 background-color: #007BFF;
+                color: white !important;
             }
 
-            /* 2. [다시 찍기 버튼] (kind="secondary" 필수) */
+            /* 2. [다시 찍기 버튼] (kind="secondary" 인 경우에만) */
             div[data-testid="stCameraInput"] button[kind="secondary"] {
-                text-indent: -9999px;
+                text-indent: -9999px !important;
             }
             div[data-testid="stCameraInput"] button[kind="secondary"]::after {
-                content: "🗑 다시 찍기";
-                text-indent: 0;
-                display: block;
+                content: "🗑 다시 찍기" !important;
+                display: block !important;
                 position: absolute;
                 top: 50%; left: 50%;
                 transform: translate(-50%, -50%);
@@ -277,7 +283,7 @@ if is_korean_mode:
                 font-weight: bold;
                 color: #333 !important;
             }
-
+            
             /* 3. [앨범 버튼] */
             [data-testid="stFileUploaderDropzone"] button {
                 text-indent: -9999px;
