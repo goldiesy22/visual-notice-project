@@ -8,7 +8,6 @@ import base64
 # ==========================================
 # 1. 보안 및 API 설정 (Secrets 사용)
 # ==========================================
-# 깃허브 보안을 위해 st.secrets 사용
 if "GOOGLE_API_KEY" in st.secrets:
     GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
 else:
@@ -43,7 +42,7 @@ def get_image_base64(image_path):
         return base64.b64encode(img_file.read()).decode('utf-8')
 
 # ==========================================
-# 3. 다국어 UI 사전 (11개국 언어 전체 포함)
+# 3. 다국어 UI 사전 (아이콘 사용으로 단순화)
 # ==========================================
 ui_lang = {
     "한국어": {
@@ -136,11 +135,9 @@ ui_lang = {
     }
 }
 
-# 언어 감지 로직 (매핑 기능 포함)
 def get_ui_language(user_input):
     if not user_input: return ui_lang["한국어"]
     text = user_input.lower()
-    # 주요 언어 매핑
     mapping = {
         'china': '중국어', 'chinese': '중국어', 'taiwan': '중국어', '중국': '중국어',
         'viet': '베트남어', '베트남': '베트남어',
@@ -191,7 +188,7 @@ else:
     final_target_lang = lang_key
 
 # ==========================================
-# 5. 스타일 설정 (CSS) - 🚨 아이콘 전략 (오류 해결 핵심)
+# 5. 스타일 설정 (CSS) - 🚨 글씨 완전 소멸 & 아이콘 강제 적용
 # ==========================================
 st.markdown("""
     <style>
@@ -201,45 +198,53 @@ st.markdown("""
         
         html, body, [class*="st-"] { font-size: 22px !important; }
 
-        /* [전역 초기화] 카메라 내부 모든 버튼 투명화 */
+        /* [1] 카메라 내부 버튼 초기화 (일단 다 투명하게) */
         div[data-testid="stCameraInput"] button {
             background-color: transparent !important;
             border: none !important;
             box-shadow: none !important;
-            text-indent: 0 !important;
-            padding: 0 !important;
-            margin: 0 !important;
-            width: auto !important;
-            color: inherit !important;
-        }
-        /* 기존 글씨 숨기기 */
-        div[data-testid="stCameraInput"] button > div { display: none !important; }
-
-        /* [전환 버튼 보호] SVG(아이콘) 있는 버튼은 건드리지 않음 */
-        div[data-testid="stCameraInput"] button:has(svg) {
-            background-color: transparent !important;
+            color: transparent !important; /* 글씨 색도 투명하게 */
         }
 
-        /* [촬영 버튼 꾸미기] SVG 없는 버튼 = 촬영 버튼 */
-        div[data-testid="stCameraInput"] button:not(:has(svg)) {
+        /* [2] 🚨 중요: 오직 'kind=primary' (촬영 버튼)만 꾸미기 
+           - 전환 버튼(오른쪽 주황색 범인)은 primary가 아니라서 이 영향을 안 받음!
+        */
+        div[data-testid="stCameraInput"] button[kind="primary"] {
             background-color: #007BFF !important; 
-            border-radius: 50% !important;
+            border-radius: 50% !important; /* 동그랗게 */
             width: 80px !important;
             height: 80px !important;
             margin: 0 auto !important;
-            display: flex !important;
-            justify-content: center !important;
-            align-items: center !important;
+            
+            /* 글씨를 아예 0으로 만들어서 없애버림 (Hide Text) */
+            font-size: 0px !important; 
+            line-height: 0px !important;
+            text-indent: -9999px !important;
         }
-        /* 📸 아이콘 삽입 */
-        div[data-testid="stCameraInput"] button:not(:has(svg))::after {
+
+        /* [3] 촬영 버튼 위에 📸 아이콘 덮어씌우기 */
+        div[data-testid="stCameraInput"] button[kind="primary"]::after {
             content: "📸" !important;
             font-size: 40px !important;
+            color: white !important;
             display: block !important;
-            line-height: 1 !important;
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%); /* 정가운데 배치 */
+            visibility: visible !important;
+            line-height: normal !important;
         }
-        
-        /* 앨범 업로드 버튼 */
+
+        /* [4] 전환 버튼 복구 (혹시라도 색이 입혀졌을까봐 강제 투명화) */
+        div[data-testid="stCameraInput"] button:not([kind="primary"]) {
+            background: transparent !important;
+            color: inherit !important; /* 원래 아이콘 색상 사용 */
+            font-size: unset !important; /* 폰트 크기 복구 */
+            width: auto !important;
+            height: auto !important;
+        }
+
+        /* [5] 앨범 업로드 버튼 스타일 */
         div[data-testid="stFileUploader"] button {
             background-color: #007BFF !important; color: white !important;
             border: none !important; font-weight: bold !important; border-radius: 8px !important;
