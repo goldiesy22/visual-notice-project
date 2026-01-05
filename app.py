@@ -12,7 +12,7 @@ import base64
 # ⚠️ [필수] 여기에 사용자님의 실제 API 키를 붙여넣으세요!
 GOOGLE_API_KEY = "AIzaSyBePQTVzbiFaPH7InG7pmkYr_3YCbaRfK0"
 
-# API 설정 및 모델 준비
+# 🚨 [수정 완료] 오류가 나던 '2.5' 버전을 '1.5'로 변경했습니다. (무료 사용량 넉넉함)
 genai.configure(api_key=GOOGLE_API_KEY)
 model = genai.GenerativeModel('gemini-1.5-flash')
 
@@ -197,7 +197,7 @@ else:
         final_target_lang = lang_key
 
 # ==========================================
-# 5. 스타일 설정 (CSS)
+# 5. 스타일 설정 (CSS) - 🚨 버튼 정밀 타겟팅 수정
 # ==========================================
 is_korean_mode = ("Korean" in final_target_lang) or (final_target_lang == "한국어")
 
@@ -215,7 +215,7 @@ if is_korean_mode:
         <style>
             html, body, [class*="st-"] { font-size: 22px !important; }
             
-            /* [공통] 기본 파란 버튼 */
+            /* [공통] 기본 파란 버튼 스타일 */
             div.stButton > button, button[kind="primary"],
             div[data-testid="stFileUploader"] button {
                 background-color: #007BFF !important; color: white !important;
@@ -223,10 +223,10 @@ if is_korean_mode:
                 position: relative; overflow: hidden; 
             }
 
-            /* 1. [사진찍기 버튼] 메인 버튼(kind=primary)만 타겟팅 (카메라 전환 버튼 등 제외) */
+            /* 🚨 중요 수정: '모든' 버튼이 아니라 'primary(메인)' 버튼만 골라서 스타일 적용 */
             div[data-testid="stCameraInput"] button[kind="primary"] {
                 background-color: #007BFF !important; 
-                text-indent: -9999px;
+                text-indent: -9999px; /* 영어 숨기기 */
                 padding: 40px 0px !important;
             }
             div[data-testid="stCameraInput"] button[kind="primary"]::after {
@@ -244,9 +244,9 @@ if is_korean_mode:
                 background-color: #007BFF;
             }
 
-            /* 1-1. [삭제/다시찍기 버튼] 'Clear photo'를 '다시 찍기'로 변경 */
+            /* 🚨 중요 수정: 삭제(Clear) 버튼은 'secondary'만 타겟팅 */
             div[data-testid="stCameraInput"] button[kind="secondary"] {
-                text-indent: -9999px;
+                text-indent: -9999px; /* 영어 숨기기 */
             }
             div[data-testid="stCameraInput"] button[kind="secondary"]::after {
                 content: "🗑 다시 찍기";
@@ -257,6 +257,7 @@ if is_korean_mode:
                 transform: translate(-50%, -50%);
                 font-size: 18px !important;
                 font-weight: bold;
+                color: #333 !important; /* 글씨 색상 */
             }
 
             /* 2. [앨범 버튼] */
