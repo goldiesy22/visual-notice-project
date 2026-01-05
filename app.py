@@ -1,3 +1,7 @@
+# 업데이트 확인용 주석입니다
+import streamlit as st
+...
+
 import streamlit as st
 import google.generativeai as genai
 from PIL import Image
