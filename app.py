@@ -9,8 +9,15 @@ import base64
 # 1. 설정 (Configuration)
 # ==========================================
 
-# ⚠️ [필수] 아까 새로 발급받으신 API 키를 따옴표 안에 붙여넣으세요!
-GOOGLE_API_KEY = "AIzaSyBePQTVzbiFaPH7InG7pmkYr_3YCbaRfK0"
+# 이 코드는 깃허브에 올라가도 안전함 (키가 안 적혀 있으니까!)
+import streamlit as st
+
+try:
+    # 스트림릿 금고에서 키를 꺼내오는 명령어
+    GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
+except:
+    # 혹시 금고가 비었을 때를 대비한 에러 메시지
+    st.error("스트림릿 설정(Secrets)에 API 키를 등록해주세요!")
 
 # 🚨 AI 모델: 1.5-flash (안정적, 무료 사용량 넉넉함)
 genai.configure(api_key=GOOGLE_API_KEY)
