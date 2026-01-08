@@ -19,8 +19,8 @@ else:
 
 genai.configure(api_key=GOOGLE_API_KEY)
 
-# 🚨 사용자님이 선택하신 'gemini-2.5-flash' 모델 유지
-model = genai.GenerativeModel('gemini-2.5-flash') 
+# 🚨 [최종 결정] 도구가 업데이트되었으므로, 속도 제한이 널널한(1분 15회) 표준 모델 사용
+model = genai.GenerativeModel('gemini-1.5-flash') 
 
 ASSETS_DIR = "assets"
 
@@ -88,7 +88,7 @@ st.markdown("""
         .icon-row-container {
             display: flex;
             flex-wrap: wrap;       
-            gap: 30px;             /* 간격 조금 더 넓게 */
+            gap: 30px;             /* 간격 유지 */
             justify-content: flex-start; 
             margin-bottom: 20px;
             padding: 10px 0;
@@ -352,7 +352,7 @@ if img_file and final_target_lang:
         raw_image = Image.open(img_file)
         image = resize_image_for_speed(raw_image)
         
-        # 🚨 [수정됨] 예시(Example)를 한국어로 변경하여 AI가 영어를 뱉지 않도록 유도
+        # 🚨 [수정됨] 예시를 한국어로 설정하여 AI의 영어 출력 실수 방지
         output_format_example = """
         {
             "detected_lang": "Mongolian",
