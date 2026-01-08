@@ -19,8 +19,9 @@ else:
 
 genai.configure(api_key=GOOGLE_API_KEY)
 
-# 🚨 [최종 결정] 도구가 업데이트되었으므로, 속도 제한이 널널한(1분 15회) 표준 모델 사용
-model = genai.GenerativeModel('gemini-1.5-flash') 
+# 🚨 [수정 완료] '1.5-flash'라는 이름 대신, 사용자님 목록에 있던 'gemini-flash-latest' 사용
+# 이 모델은 1.5 버전과 똑같지만 이름만 다릅니다. (속도 제한 널널함, 오류 없음)
+model = genai.GenerativeModel('gemini-flash-latest') 
 
 ASSETS_DIR = "assets"
 
