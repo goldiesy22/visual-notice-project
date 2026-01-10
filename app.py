@@ -3,14 +3,13 @@ import google.generativeai as genai
 from PIL import Image
 import os
 import json
-import io
 import base64 
 
 # ==========================================
 # 1. 설정 (Configuration)
 # ==========================================
 
-# ⚠️ [필수] API 키 확인 (Secrets 사용)
+# ⚠️ API 키 설정 (Secrets 사용)
 if "GOOGLE_API_KEY" in st.secrets:
     GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
 else:
@@ -19,9 +18,8 @@ else:
 
 genai.configure(api_key=GOOGLE_API_KEY)
 
-# 🚨 [수정 완료] '1.5-flash'라는 이름 대신, 사용자님 목록에 있던 'gemini-flash-latest' 사용
-# 이 모델은 1.5 버전과 똑같지만 이름만 다릅니다. (속도 제한 널널함, 오류 없음)
-model = genai.GenerativeModel('gemini-flash-latest') 
+# 🚨 [최종 모델] 속도 제한 없고 안정적인 1.5 Flash 사용
+model = genai.GenerativeModel('gemini-1.5-flash') 
 
 ASSETS_DIR = "assets"
 
@@ -29,135 +27,93 @@ ASSETS_DIR = "assets"
 st.set_page_config(page_title="모두의 알림장", page_icon="🏫", layout="wide")
 
 # ==========================================
-# 2. 스타일 설정 (CSS)
+# 2. 스타일 설정 (CSS) - 디자인 끝판왕
 # ==========================================
 st.markdown("""
     <style>
-    html, body, [class*="st-"] { font-size: 22px !important; }
-    
-    /* 1. [공통] 파란색 버튼 스타일 (기존 유지) */
-    div.stButton > button, 
-    button[kind="primary"],
-    div[data-testid="stCameraInput"] button {
-        background-color: #007BFF !important; 
-        color: white !important;
-        border: none !important; 
-        font-weight: bold !important; 
-        font-size: 20px !important; 
-        padding: 10px 20px !important; 
-        border-radius: 8px !important;
-    }
-    div.stButton > button:hover {
-        background-color: #0056b3 !important; 
-    }
+        html, body, [class*="st-"] { font-size: 22px !important; }
+        
+        /* 1. 파란색 버튼 스타일 */
+        div.stButton > button, 
+        button[kind="primary"],
+        div[data-testid="stCameraInput"] button {
+            background-color: #007BFF !important; 
+            color: white !important;
+            border: none !important; 
+            font-weight: bold !important; 
+            font-size: 20px !important; 
+            padding: 10px 20px !important; 
+            border-radius: 8px !important;
+        }
+        div.stButton > button:hover {
+            background-color: #0056b3 !important; 
+        }
 
-    /* 2. [한국어 모드 전용] 파일 업로더 텍스트 숨기기 */
-    [data-testid="stFileUploader"] section[data-testid="stFileUploaderDropzone"] > div > div > small {
-        display: none !important;
-    }
+        /* 2. 파일 업로더 텍스트 숨기기 */
+        [data-testid="stFileUploader"] section[data-testid="stFileUploaderDropzone"] > div > div > small {
+            display: none !important;
+        }
 
-    /* 3. 부제목 스타일 */
-    .subtitle-text {
-        text-align: center; 
-        color: #555; 
-        margin-top: 0px; 
-        margin-bottom: 20px;
-        font-weight: bold; 
-        line-height: 1.5;
-    }
-    .subtitle-eng {
-        font-size: 1.0em; 
-        color: #555;       
-        display: block;    
-        margin-top: 5px;  
-    }
+        /* 3. 부제목 스타일 */
+        .subtitle-text {
+            text-align: center; 
+            color: #555; 
+            margin-top: 0px; 
+            margin-bottom: 20px;
+            font-weight: bold; 
+            line-height: 1.5;
+        }
+        .subtitle-eng {
+            font-size: 1.0em; 
+            color: #555;       
+            display: block;    
+            margin-top: 5px;  
+        }
 
-    /* 4. [업그레이드] 요약 박스 스타일 (카드 형태) 
-       👉 여기가 새로 추가된 부분입니다! */
-    .summary-box {
-        background-color: #ffffff; /* 흰색 배경 */
-        padding: 30px;
-        border-radius: 15px;       /* 둥근 모서리 */
-        border-left: 10px solid #007BFF; /* 왼쪽에 파란색 포인트 */
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1); /* 그림자 효과 */
-        font-size: 22px;
-        line-height: 1.8;
-        color: #333;
-        margin-top: 10px;
-        margin-bottom: 20px;
-    }
+        /* 4. [디자인] 요약 박스 (카드 형태) */
+        .summary-box {
+            background-color: #ffffff; 
+            padding: 30px;
+            border-radius: 15px;       
+            border-left: 10px solid #007BFF; /* 왼쪽에 파란색 포인트 */
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1); /* 입체 그림자 */
+            font-size: 22px;
+            line-height: 1.8;
+            color: #333;
+            margin-top: 10px;
+            margin-bottom: 30px;
+        }
 
-    /* 5. 아이콘 레이아웃 CSS (Flexbox 강력 고정) */
-    .icon-row-container {
-        display: flex;
-        flex-wrap: wrap;       
-        gap: 30px;             
-        justify-content: flex-start; 
-        margin-bottom: 20px;
-        padding: 10px 0;
-    }
-    .icon-item-box {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        width: 90px;      
-        flex-shrink: 0;   
-    }
-    .unified-icon {
-        width: 90px !important;  
-        height: 90px !important; 
-        min-width: 90px;         
-        min-height: 90px;        
-        object-fit: contain; 
-        display: block;
-    }
-    .icon-text {
-        text-align: center;
-        font-weight: bold;
-        margin-top: 10px;
-        font-size: 18px;    
-        width: 110px;       
-        word-wrap: break-word; 
-        line-height: 1.3;
-    }
-</style>
-
-========================================
-          [아이콘 레이아웃 CSS - Flexbox 강력 고정]
-          ========================================
-        */
+        /* 5. 아이콘 레이아웃 (90px 고정 + 자동 줄바꿈) */
         .icon-row-container {
             display: flex;
             flex-wrap: wrap;       
-            gap: 30px;             /* 간격 유지 */
+            gap: 30px;             
             justify-content: flex-start; 
             margin-bottom: 20px;
             padding: 10px 0;
         }
-
         .icon-item-box {
             display: flex;
             flex-direction: column;
             align-items: center;
-            width: 90px;      /* 너비 90px */
-            flex-shrink: 0;   /* 🚨 [중요] 공간이 좁아도 절대 찌그러지지 않게 함 */
+            width: 90px;      
+            flex-shrink: 0;   
         }
-
         .unified-icon {
-            width: 90px !important;  /* 🚨 강제 고정 */
-            height: 90px !important; /* 🚨 강제 고정 */
-            min-width: 90px;         /* 🚨 최소 크기 보장 */
-            min-height: 90px;        /* 🚨 최소 크기 보장 */
+            width: 90px !important;  
+            height: 90px !important; 
+            min-width: 90px;         
+            min-height: 90px;        
             object-fit: contain; 
             display: block;
         }
-
         .icon-text {
             text-align: center;
             font-weight: bold;
             margin-top: 10px;
-            font-size: 18px;    /* 글씨 크기 키움 */
-            width: 110px;       /* 글씨 박스는 이미지보다 살짝 넓게 */
+            font-size: 18px;    
+            width: 110px;       
             word-wrap: break-word; 
             line-height: 1.3;
         }
@@ -301,7 +257,7 @@ def get_ui_language(user_input):
     return ui_lang["영어"]
 
 # ==========================================
-# 6. [제목] 상단 배치
+# 6. [제목] 상단 배치 (배너 이미지 있으면 교체 가능)
 # ==========================================
 st.markdown("""
     <h1 style='color: #FF9F1C; text-align: center; margin-bottom: 0px;'>🏫 모두의 AI 알림장</h1>
@@ -393,7 +349,7 @@ if img_file and final_target_lang:
         raw_image = Image.open(img_file)
         image = resize_image_for_speed(raw_image)
         
-        # 🚨 [수정됨] 예시를 한국어로 설정하여 AI의 영어 출력 실수 방지
+        # 🚨 영어 문제 해결을 위한 예시 수정
         output_format_example = """
         {
             "detected_lang": "Mongolian",
@@ -494,7 +450,7 @@ if img_file and final_target_lang:
 
             st.write("") 
             
-            # [결과 2] 요약
+            # [결과 2] 요약 (예쁜 카드 스타일 적용)
             st.markdown(f"### {current_ui['summary_header']}")
             summary_text = data.get('summary', '요약 없음').replace('\n', '<br>')
             st.markdown(f"""
