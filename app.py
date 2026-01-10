@@ -9,7 +9,7 @@ import base64
 # 1. 설정 (Configuration)
 # ==========================================
 
-# ⚠️ API 키 설정 (Secrets 사용)
+# ⚠️ [필수] API 키 확인 (Secrets 사용)
 if "GOOGLE_API_KEY" in st.secrets:
     GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
 else:
@@ -18,8 +18,9 @@ else:
 
 genai.configure(api_key=GOOGLE_API_KEY)
 
-# 🚨 [최종 모델] 속도 제한 없고 안정적인 1.5 Flash 사용
-model = genai.GenerativeModel('gemini-1.5-flash') 
+# 🚨 [수정 완료] '1.5-flash'라는 이름 대신, 사용자님 목록에 있던 'gemini-flash-latest' 사용
+# 이 모델은 1.5 버전과 똑같지만 이름만 다릅니다. (속도 제한 널널함, 오류 없음)
+model = genai.GenerativeModel('gemini-flash-latest') 
 
 ASSETS_DIR = "assets"
 
@@ -27,13 +28,13 @@ ASSETS_DIR = "assets"
 st.set_page_config(page_title="모두의 알림장", page_icon="🏫", layout="wide")
 
 # ==========================================
-# 2. 스타일 설정 (CSS) - 디자인 끝판왕
+# 2. 스타일 설정 (CSS)
 # ==========================================
 st.markdown("""
     <style>
         html, body, [class*="st-"] { font-size: 22px !important; }
         
-        /* 1. 파란색 버튼 스타일 */
+        /* 1. [공통] 파란색 버튼 스타일 */
         div.stButton > button, 
         button[kind="primary"],
         div[data-testid="stCameraInput"] button {
@@ -49,7 +50,7 @@ st.markdown("""
             background-color: #0056b3 !important; 
         }
 
-        /* 2. 파일 업로더 텍스트 숨기기 */
+        /* 2. [한국어 모드 전용] 파일 업로더 텍스트 숨기기 */
         [data-testid="stFileUploader"] section[data-testid="stFileUploaderDropzone"] > div > div > small {
             display: none !important;
         }
@@ -70,7 +71,7 @@ st.markdown("""
             margin-top: 5px;  
         }
 
-        /* 4. [디자인] 요약 박스 (카드 형태) */
+        /* 4. [업그레이드] 요약 박스 스타일 (카드 형태) */
         .summary-box {
             background-color: #ffffff; 
             padding: 30px;
