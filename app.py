@@ -33,56 +33,96 @@ st.set_page_config(page_title="모두의 알림장", page_icon="🏫", layout="w
 # ==========================================
 st.markdown("""
     <style>
-        html, body, [class*="st-"] { font-size: 22px !important; }
-        
-        /* 1. [공통] 파란색 버튼 스타일 */
-        div.stButton > button, 
-        button[kind="primary"],
-        div[data-testid="stCameraInput"] button {
-            background-color: #007BFF !important; 
-            color: white !important;
-            border: none !important; 
-            font-weight: bold !important; 
-            font-size: 20px !important; 
-            padding: 10px 20px !important; 
-            border-radius: 8px !important;
-        }
-        div.stButton > button:hover {
-            background-color: #0056b3 !important; 
-        }
+    html, body, [class*="st-"] { font-size: 22px !important; }
+    
+    /* 1. [공통] 파란색 버튼 스타일 (기존 유지) */
+    div.stButton > button, 
+    button[kind="primary"],
+    div[data-testid="stCameraInput"] button {
+        background-color: #007BFF !important; 
+        color: white !important;
+        border: none !important; 
+        font-weight: bold !important; 
+        font-size: 20px !important; 
+        padding: 10px 20px !important; 
+        border-radius: 8px !important;
+    }
+    div.stButton > button:hover {
+        background-color: #0056b3 !important; 
+    }
 
-        /* 2. [한국어 모드 전용] 파일 업로더 텍스트 숨기기 */
-        [data-testid="stFileUploader"] section[data-testid="stFileUploaderDropzone"] > div > div > small {
-            display: none !important;
-        }
+    /* 2. [한국어 모드 전용] 파일 업로더 텍스트 숨기기 */
+    [data-testid="stFileUploader"] section[data-testid="stFileUploaderDropzone"] > div > div > small {
+        display: none !important;
+    }
 
-        /* 부제목 스타일 */
-        .subtitle-text {
-            text-align: center; 
-            color: #555; 
-            margin-top: 0px; 
-            margin-bottom: 20px;
-            font-weight: bold; 
-            line-height: 1.5;
-        }
-        .subtitle-eng {
-            font-size: 1.0em; 
-            color: #555;       
-            display: block;    
-            margin-top: 5px;  
-        }
-        /* 요약 박스 스타일 */
-        .summary-box {
-            background-color: #F0F7FF; 
-            padding: 25px; 
-            border-radius: 15px; 
-            border: 3px solid #4A90E2; 
-            font-size: 24px; 
-            line-height: 1.8; 
-            color: #333;
-        }
+    /* 3. 부제목 스타일 */
+    .subtitle-text {
+        text-align: center; 
+        color: #555; 
+        margin-top: 0px; 
+        margin-bottom: 20px;
+        font-weight: bold; 
+        line-height: 1.5;
+    }
+    .subtitle-eng {
+        font-size: 1.0em; 
+        color: #555;       
+        display: block;    
+        margin-top: 5px;  
+    }
 
-        /* ========================================
+    /* 4. [업그레이드] 요약 박스 스타일 (카드 형태) 
+       👉 여기가 새로 추가된 부분입니다! */
+    .summary-box {
+        background-color: #ffffff; /* 흰색 배경 */
+        padding: 30px;
+        border-radius: 15px;       /* 둥근 모서리 */
+        border-left: 10px solid #007BFF; /* 왼쪽에 파란색 포인트 */
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1); /* 그림자 효과 */
+        font-size: 22px;
+        line-height: 1.8;
+        color: #333;
+        margin-top: 10px;
+        margin-bottom: 20px;
+    }
+
+    /* 5. 아이콘 레이아웃 CSS (Flexbox 강력 고정) */
+    .icon-row-container {
+        display: flex;
+        flex-wrap: wrap;       
+        gap: 30px;             
+        justify-content: flex-start; 
+        margin-bottom: 20px;
+        padding: 10px 0;
+    }
+    .icon-item-box {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 90px;      
+        flex-shrink: 0;   
+    }
+    .unified-icon {
+        width: 90px !important;  
+        height: 90px !important; 
+        min-width: 90px;         
+        min-height: 90px;        
+        object-fit: contain; 
+        display: block;
+    }
+    .icon-text {
+        text-align: center;
+        font-weight: bold;
+        margin-top: 10px;
+        font-size: 18px;    
+        width: 110px;       
+        word-wrap: break-word; 
+        line-height: 1.3;
+    }
+</style>
+
+========================================
           [아이콘 레이아웃 CSS - Flexbox 강력 고정]
           ========================================
         */
