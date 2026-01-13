@@ -95,7 +95,7 @@ st.markdown("""
             margin-bottom: 20px;
         }
 
-        /* 5. 아이콘 레이아웃 (90px 고정 + 자동 줄바꿈) */
+        /* 5. 아이콘 레이아웃 (반응형: 모바일 90px / PC 180px) */
         .icon-row-container {
             display: flex;
             flex-wrap: wrap;        
@@ -104,11 +104,13 @@ st.markdown("""
             margin-bottom: 20px;
             padding: 10px 0;
         }
+
+        /* 📱 [기본] 모바일 스타일 (기존 크기 90px 유지) */
         .icon-item-box {
             display: flex;
             flex-direction: column;
             align-items: center;
-            width: 90px;       
+            width: 90px;      
             flex-shrink: 0;    
         }
         .unified-icon {
@@ -127,6 +129,27 @@ st.markdown("""
             width: 110px;        
             word-wrap: break-word; 
             line-height: 1.3;
+        }
+
+        /* 💻 [PC] 화면이 넓을 때 (768px 이상) -> 2배 확대 (180px) */
+        @media (min-width: 768px) {
+            .icon-item-box {
+                width: 180px; 
+            }
+            .unified-icon {
+                width: 180px !important;  
+                height: 180px !important; 
+                min-width: 180px;          
+                min-height: 180px;   
+            }
+            .unified-icon[style*="font-size: 50px"] {
+                font-size: 100px !important; /* 이모지(🎒) 크기도 2배 */
+            }
+            .icon-text {
+                font-size: 26px; /* 글자도 시원하게 키움 */
+                width: 200px;    /* 글자 박스도 넓힘 */
+                margin-top: 15px;
+            }
         }
         
         /* 👇 [추가됨] 6. 중요 내용 텍스트 선택(드래그) 허용 */
