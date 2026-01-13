@@ -10,7 +10,7 @@ import io
 # ==========================================
 # 👇 [여기만 고치세요] 따옴표("") 안에 새 키를 붙여넣으세요!
 # ==========================================
-MY_DIRECT_KEY = "AIzaSyDC0TbYKns966JZBv-1dWGbq-rBQs0guh4"
+MY_DIRECT_KEY = "AIzaSyCQqwCFatYYm9RVsPPaxeBv7qn765KcgvE"
 # ==========================================
 
 
