@@ -26,6 +26,20 @@ ASSETS_DIR = "assets"
 # 페이지 설정
 st.set_page_config(page_title="모두의 알림장", page_icon="🏫", layout="wide")
 
+# 페이지 설정 (이게 제일 위에 있어야 함)
+st.set_page_config(page_title="모두의 알림장", page_icon="🏫", layout="wide")
+
+# 👇 [여기 추가] 모바일에서 주소창 없애고 앱처럼 보이게 하는 코드
+st.markdown("""
+    <style>
+        /* 모바일에서 꾹 눌러서 글자 선택되는 것 방지 (앱처럼 느낌) */
+        body { -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }
+    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+""", unsafe_allow_html=True)
+
 # ==========================================
 # 2. 스타일 설정 (CSS) - 하늘색 박스 복구 완료
 # ==========================================
