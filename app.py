@@ -8,7 +8,7 @@ from gtts import gTTS
 import io
 
 # ==========================================
-# 1. [철통 보안] 안전한 모델만 골라잡기
+# 1. [완전 자동] 사용 가능 모델 실시간 조회 및 연결
 # ==========================================
 
 if "GOOGLE_API_KEY" in st.secrets:
@@ -19,45 +19,69 @@ else:
 
 genai.configure(api_key=GOOGLE_API_KEY)
 
-# 1. 버전 확인 (0.8.3 확인 완료!)
+# 1. 버전 확인
 current_version = genai.__version__
 st.sidebar.markdown(f"**🛠 도구 버전:** `{current_version}`")
 
-# 2. 모델 연결 (화이트리스트 방식)
-valid_model_name = None
+# 2. 내 API 키로 사용 가능한 모델 명단 조회 (서버에 직접 물어봄)
 try:
-    # 내 키로 사용 가능한 모델 명단 조회
-    available_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
-    
-    # 🚨 [수정] "Flash 들어간거 아무거나" 찾던 로직 삭제! 
-    # 오직 이 명단에 있는 "검증된 모델"만 허용합니다. (2.0, 2.5 절대 불가)
-    safe_whitelist = [
-        "models/gemini-1.5-flash",       # 1순위: 표준
-        "models/gemini-1.5-flash-001",   # 2순위: 구버전 호환
-        "models/gemini-1.5-flash-002",   # 3순위: 안정화
-        "models/gemini-1.5-flash-8b",    # 4순위: 경량화
-        "models/gemini-1.5-pro",         # 5순위: Pro (Flash 안되면 이거라도)
-        "models/gemini-1.0-pro",         # 6순위: 구형 Pro
-        "models/gemini-pro"              # 7순위: 제일 구형
-    ]
-
-    # 내 명단과 안전 명단 대조 (교집합 찾기)
-    for safe_model in safe_whitelist:
-        if safe_model in available_models:
-            valid_model_name = safe_model
-            break
-            
-    # ※ 만약 위에서 못 찾으면? 이상한거 찾지 말고 그냥 표준 이름 강제 지정!
-    if not valid_model_name:
-        valid_model_name = 'gemini-1.5-flash'
-
+    my_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
 except Exception as e:
-    st.sidebar.error(f"목록 조회 실패: {e}")
-    valid_model_name = 'gemini-1.5-flash'
+    st.error(f"모델 목록 조회 실패: {e}")
+    my_models = []
 
-# 3. 최종 연결
-model = genai.GenerativeModel(valid_model_name)
-st.sidebar.success(f"✅ 연결 성공: `{valid_model_name}`")
+# 3. 사이드바에 명단 공개 (사용자가 직접 확인 가능)
+with st.sidebar.expander("📋 내 사용 가능 모델 명단", expanded=True):
+    if my_models:
+        for m in my_models:
+            st.code(m, language=None)
+    else:
+        st.error("조회된 모델이 없습니다. API 키를 확인하세요.")
+
+# 4. [지능형 선택] 명단 중에서 가장 좋은 모델 고르기
+final_model_name = None
+
+# 우선순위: 1.5 Flash -> 1.5 Pro -> 1.0 Pro
+# (단, 2.0/2.5/experimental은 오류 가능성 높으니 후순위거나 제외)
+
+# 전략: "whitelist"에 있는 게 "my_models"에 있으면 바로 채택
+preferred_order = [
+    "models/gemini-1.5-flash",
+    "models/gemini-1.5-flash-001",
+    "models/gemini-1.5-flash-002",
+    "models/gemini-1.5-flash-8b",
+    "models/gemini-1.5-pro",
+    "models/gemini-1.5-pro-001",
+    "models/gemini-1.0-pro",
+    "models/gemini-pro"
+]
+
+# 1차 시도: 선호하는 안정적 모델 찾기
+for target in preferred_order:
+    if target in my_models:
+        final_model_name = target
+        break
+
+# 2차 시도: 선호 명단에 없으면, 가지고 있는 것 중에 'flash'나 'pro'가 들어간 거 아무거나 잡기
+# (단, 2.0, 2.5, exp 같은 위험한 건 피함)
+if not final_model_name and my_models:
+    for m in my_models:
+        if ("flash" in m or "pro" in m) and "2.0" not in m and "2.5" not in m and "exp" not in m:
+            final_model_name = m
+            break
+
+# 3차 시도: 정 없으면 그냥 목록의 첫 번째 놈이라도 씀 (에러보다는 나음)
+if not final_model_name and my_models:
+    final_model_name = my_models[0]
+    st.sidebar.warning("⚠️ 안정적인 모델을 찾지 못해 임의의 모델을 연결했습니다.")
+
+# 5. 최종 연결
+if final_model_name:
+    model = genai.GenerativeModel(final_model_name)
+    st.sidebar.success(f"✅ 연결됨: `{final_model_name}`")
+else:
+    st.error("🚨 사용 가능한 모델이 하나도 없습니다. API 키 문제일 수 있습니다.")
+    st.stop()
 
 
 ASSETS_DIR = "assets"
