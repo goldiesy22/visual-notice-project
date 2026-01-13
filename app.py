@@ -8,7 +8,7 @@ from gtts import gTTS
 import io
 
 # ==========================================
-# 1. [진단 모드] 버전 확인 & 모델 강제 탐색
+# 1. [진단 모드] 버전 확인 & 2.5 버전 차단
 # ==========================================
 
 if "GOOGLE_API_KEY" in st.secrets:
@@ -19,59 +19,54 @@ else:
 
 genai.configure(api_key=GOOGLE_API_KEY)
 
-# 👇 [진단] 라이브러리 버전 확인
+# 1. 버전 확인 (잘 되셨으니 통과!)
 current_version = genai.__version__
 st.sidebar.markdown(f"**🛠 도구 버전:** `{current_version}`")
 
-if current_version < "0.8.3":
-    st.sidebar.error("🚨 버전이 너무 낮습니다! (구형)")
-    st.sidebar.info("캐시 삭제(Clear cache)가 시급합니다.")
-
-# 👇 [핵심] 실제 사용 가능한 모델 명단 조회
-# 추측하지 않고, 서버가 준 명단 중에서만 고릅니다.
+# 2. 모델 연결 (여기가 핵심 수정!)
 valid_model_name = None
 try:
+    # 내 키로 쓸 수 있는 모델 다 가져옴
     available_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
     
-    # 디버깅용: 명단 출력 (나중에 지우셔도 됩니다)
-    # st.sidebar.text(f"목록: {available_models}")
-
-    # 우선순위: 1.5 Flash -> Pro -> 구형 Pro
-    # (실험용 2.0이나 exp는 제외)
-    targets = [
+    # 🚨 [중요] 2.5 버전은 하루 20회 제한이라 무조건 걸러야 함!
+    # 우리가 원하는 1.5 Flash 명단 (우선순위 순)
+    safe_targets = [
         "models/gemini-1.5-flash", 
         "gemini-1.5-flash",
         "models/gemini-1.5-flash-001",
+        "models/gemini-1.5-flash-002",
+        "models/gemini-1.5-flash-8b",
         "models/gemini-1.5-pro",
-        "models/gemini-pro",
-        "gemini-pro"
+        "gemini-1.5-pro"
     ]
 
-    for target in targets:
+    # 명단 대조: 안전한 것만 골라잡기
+    for target in safe_targets:
         if target in available_models:
             valid_model_name = target
             break
             
-    # 명단에 없어도, 목록에 있는 첫 번째 'flash'를 잡음
+    # 만약 위에서 못 찾았다면? (비상 대책)
     if not valid_model_name:
         for m in available_models:
-            if "flash" in m and "exp" not in m and "2.0" not in m:
+            # 이름에 'flash'가 있지만 '2.5'나 'exp(실험용)'는 절대 아닐 때만 선택
+            if "flash" in m and "2.5" not in m and "exp" not in m:
                 valid_model_name = m
                 break
 
 except Exception as e:
     st.sidebar.error(f"목록 조회 실패: {e}")
 
-# 최종 연결
+# 3. 최종 연결
 if valid_model_name:
     model = genai.GenerativeModel(valid_model_name)
-    st.sidebar.success(f"✅ 연결 성공: `{valid_model_name}`")
+    st.sidebar.success(f"✅ 연결 성공: `{valid_model_name}`") # 이제 여기에 1.5가 뜰 겁니다!
 else:
-    # 정말 최악의 경우 (명단 조회도 안 될 때)
-    # 어쩔 수 없이 가장 기본 이름으로 강제 설정
+    # 최후의 수단: 강제로 1.5 지정
     fallback = 'gemini-1.5-flash'
     model = genai.GenerativeModel(fallback)
-    st.sidebar.warning(f"⚠️ 강제 연결 시도: {fallback}")
+    st.sidebar.warning(f"⚠️ 강제 연결: {fallback}")
 
 
 ASSETS_DIR = "assets"
