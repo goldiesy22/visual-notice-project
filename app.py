@@ -480,7 +480,7 @@ if img_file and final_target_lang:
             # [결과 2] 요약 (하늘색 박스)
             st.markdown(f"### {current_ui['summary_header']}")
             
-            # 🔊 TTS 생성 및 재생 코드 추가
+            # 🔊 TTS 생성 및 재생 코드 (수정됨: 되감기 추가)
             summary_text = data.get('summary', '요약 없음')
             
             # 오디오 생성
@@ -489,10 +489,13 @@ if img_file and final_target_lang:
                 tts = gTTS(text=summary_text, lang=tts_lang)
                 mp3_fp = io.BytesIO()
                 tts.write_to_fp(mp3_fp)
+                
+                # 🚨 [중요] 파일 포인터를 맨 앞으로 되감기 (이게 없으면 오류 남!)
+                mp3_fp.seek(0) 
+                
                 st.audio(mp3_fp, format='audio/mp3') # 오디오 플레이어 표시
             except Exception as e:
                 st.warning("🔊 음성을 생성하지 못했습니다.")
-
             # 텍스트 표시
             st.markdown(f"""
                 <div class='summary-box'>
