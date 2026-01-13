@@ -4,11 +4,11 @@ from PIL import Image
 import os
 import json
 import base64
-from gtts import gTTS  # 🔊 TTS 기능을 위해 추가
-import io              # 🔊 오디오 파일 처리를 위해 추가
+from gtts import gTTS
+import io
 
 # ==========================================
-# 1. 설정 (Configuration)
+# 1. 설정 (Configuration) & 모델 자동 연결
 # ==========================================
 
 # ⚠️ API 키 설정
@@ -20,15 +20,56 @@ else:
 
 genai.configure(api_key=GOOGLE_API_KEY)
 
-# 🚨 [모델] latest 버전 유지
-model = genai.GenerativeModel('gemini-1.5-flash')
+# 🚨 [모델 자동 연결] 오류 안 나는 모델 찾기 로직
+# 우선순위: 1.5 Flash(최신) -> 1.5 Flash(구버전 호환) -> 1.5 Flash(8b) -> Pro(안정형)
+candidate_models = [
+    'gemini-1.5-flash',       # 1순위: 최신 무료 모델
+    'gemini-1.5-flash-001',   # 2순위: 구버전 라이브러리 호환 (유력)
+    'gemini-1.5-flash-002',   # 3순위: 안정화 버전
+    'gemini-1.5-flash-8b',    # 4순위: 경량화 모델
+    'gemini-1.5-pro',         # 5순위: 고성능 모델
+    'gemini-1.0-pro',         # 6순위: 구형 안정 모델
+    'gemini-pro'              # 7순위: 최후의 보루
+]
+
+active_model_name = None
+model = None
+
+# 목록을 순서대로 대입해보며 연결 시도
+for m_name in candidate_models:
+    try:
+        # 모델 객체 생성 시도
+        test_model = genai.GenerativeModel(m_name)
+        
+        # 실제 사용 가능한지 확인 (API 호출 가능한지 명단 대조)
+        found = False
+        for m in genai.list_models():
+            if m_name in m.name:
+                active_model_name = m.name
+                model = test_model
+                found = True
+                break
+        
+        if found:
+            break # 성공했으니 루프 종료
+    except:
+        continue # 에러 나면 다음 후보로 pass
+
+# 만약 다 실패하면 어쩔 수 없이 latest 사용
+if model is None:
+    model = genai.GenerativeModel('gemini-flash-latest')
+    active_model_name = "gemini-flash-latest (Backup)"
+
+# [연결 확인] 사이드바에 작게 표시 (제거 가능)
+st.sidebar.caption(f"🤖 연결된 모델: {active_model_name}")
+
 
 ASSETS_DIR = "assets"
 
 # 페이지 설정
 st.set_page_config(page_title="모두의 알림장", page_icon="🏫", layout="wide")
 
-# 👇 [PWA 설정] 앱 모드
+# 👇 [PWA 설정] 앱 모드 & 드래그 방지
 st.markdown("""
     <style>
         body { -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }
@@ -94,6 +135,15 @@ st.markdown("""
             margin-top: 10px;
             margin-bottom: 20px;
         }
+        
+        /* 👇 중요 내용 텍스트 선택(드래그) 허용 */
+        .summary-box, p, li, .stMarkdown, div[data-testid="stMarkdownContainer"] {
+            -webkit-user-select: text !important;
+            -moz-user-select: text !important;
+            -ms-user-select: text !important;
+            user-select: text !important;
+            cursor: text !important;
+        }
 
         /* 5. 아이콘 레이아웃 (반응형: 모바일 90px / PC 180px) */
         .icon-row-container {
@@ -143,25 +193,17 @@ st.markdown("""
                 min-height: 180px;   
             }
             .unified-icon[style*="font-size: 50px"] {
-                font-size: 100px !important; /* 이모지(🎒) 크기도 2배 */
+                font-size: 100px !important; /* 이모지 크기 확대 */
             }
             .icon-text {
-                font-size: 26px; /* 글자도 시원하게 키움 */
-                width: 200px;    /* 글자 박스도 넓힘 */
+                font-size: 26px; /* 글자 확대 */
+                width: 200px;    
                 margin-top: 15px;
             }
         }
-        
-        /* 👇 [추가됨] 6. 중요 내용 텍스트 선택(드래그) 허용 */
-        .summary-box, p, li, .stMarkdown, div[data-testid="stMarkdownContainer"] {
-            -webkit-user-select: text !important;
-            -moz-user-select: text !important;
-            -ms-user-select: text !important;
-            user-select: text !important;
-            cursor: text !important;
-        }
     </style>
 """, unsafe_allow_html=True)
+
 # ==========================================
 # 3. 필수 함수들
 # ==========================================
@@ -195,10 +237,10 @@ def get_tts_lang_code(lang_name):
         '태국어': 'th', 'Thai': 'th',
         '일본어': 'ja', 'Japanese': 'ja',
         '러시아어': 'ru', 'Russian': 'ru',
-        '프랑스어': 'fr', 'France': 'fr',
-        '스페인어': 'es', 'Spain': 'es'
+        '몽골어': 'mn',
+        '우즈베크어': 'uz',
+        '캄보디아어': 'km'
     }
-    # 매칭되는 게 없으면 기본 영어(en) 설정
     return lang_map.get(lang_name.split(' ')[0], 'en')
 
 # ==========================================
@@ -503,26 +545,23 @@ if img_file and final_target_lang:
             # [결과 2] 요약 (하늘색 박스)
             st.markdown(f"### {current_ui['summary_header']}")
             
-            # 🔊 TTS 생성 및 재생 코드 (최종 수정: 바이트 변환 적용)
+            # 🔊 TTS 생성 및 재생 코드 (최종 수정: 바이트 변환 적용 + 오류 해결)
             summary_text = data.get('summary', '요약 없음')
             
             # 오디오 생성
             try:
-                if summary_text.strip(): # 텍스트가 있을 때만 실행
+                if summary_text.strip(): 
                     tts_lang = get_tts_lang_code(final_target_lang)
                     tts = gTTS(text=summary_text, lang=tts_lang)
                     mp3_fp = io.BytesIO()
                     tts.write_to_fp(mp3_fp)
                     mp3_fp.seek(0)
-                    
-                    # 👇 [핵심 변경] .getvalue()를 붙여서 데이터 덩어리로 줍니다. 포맷도 mpeg로 변경.
                     st.audio(mp3_fp.getvalue(), format='audio/mpeg') 
                 else:
                     st.warning("🔊 읽어줄 텍스트가 없습니다.")
             except Exception as e:
                 st.warning(f"🔊 음성 생성 실패: {e}")
 
-            # 텍스트 표시
             st.markdown(f"""
                 <div class='summary-box'>
                     {summary_text.replace('\n', '<br>')}
@@ -565,22 +604,7 @@ with st.expander("📲 앱 설치 방법 보기 (Install App Guide)", expanded=F
            <span style='color:gray; font-size:0.9em;'>(Click 'Add' at the top right)</span><br>
         <br>
         <hr>
-        💡 <b>'카카오톡' 가족 채팅방</b>에 이 주소를 공유해두면 설치 없이도 편하게 쓸 수 있어요!<br>
+        💡 <b>가족 채팅방</b>에 이 주소를 공유해두면 설치 없이도 편하게 쓸 수 있어요!<br>
         <span style='color:gray; font-size:0.9em;'>(Share this link in your family chat room for easy access!)</span>
     </div>
     """, unsafe_allow_html=True)
-
-# ==========================================
-# 🚨 [비상용] 내 API 키로 쓸 수 있는 모델 명단 확인하기
-# ==========================================
-with st.sidebar:
-    st.divider()
-    if st.button("🔍 내 사용 가능 모델 찾기 (Debug)"):
-        st.write("👇 현재 내 API 키로 사용 가능한 모델 목록:")
-        try:
-            # 구글 서버에 직접 물어봐서 명단을 가져옵니다.
-            for m in genai.list_models():
-                if 'generateContent' in m.supported_generation_methods:
-                    st.code(m.name) # 화면에 모델 이름을 그대로 보여줌
-        except Exception as e:
-            st.error(f"확인 실패: {e}")
