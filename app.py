@@ -3,13 +3,15 @@ import google.generativeai as genai
 from PIL import Image
 import os
 import json
-import base64 
+import base64
+from gtts import gTTS  # 🔊 TTS 기능을 위해 추가
+import io              # 🔊 오디오 파일 처리를 위해 추가
 
 # ==========================================
 # 1. 설정 (Configuration)
 # ==========================================
 
-# ⚠️ API 키 설정 (Secrets 사용)
+# ⚠️ API 키 설정
 if "GOOGLE_API_KEY" in st.secrets:
     GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
 else:
@@ -18,18 +20,17 @@ else:
 
 genai.configure(api_key=GOOGLE_API_KEY)
 
-# 🚨 [모델] 사용자 요청대로 latest 버전 유지
-model = genai.GenerativeModel('gemini-flash-latest') 
+# 🚨 [모델] latest 버전 유지
+model = genai.GenerativeModel('gemini-flash-latest')
 
 ASSETS_DIR = "assets"
 
-# 페이지 설정 (중복 제거 후 하나만 유지)
+# 페이지 설정
 st.set_page_config(page_title="모두의 알림장", page_icon="🏫", layout="wide")
 
-# 👇 [PWA 설정] 모바일에서 주소창 없애고 앱처럼 보이게 하는 코드
+# 👇 [PWA 설정] 앱 모드
 st.markdown("""
     <style>
-        /* 모바일에서 꾹 눌러서 글자 선택되는 것 방지 (앱처럼 느낌) */
         body { -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }
     </style>
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
@@ -38,13 +39,12 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 2. 스타일 설정 (CSS) - 하늘색 박스 및 기존 디자인 유지
+# 2. 스타일 설정 (CSS)
 # ==========================================
 st.markdown("""
     <style>
         html, body, [class*="st-"] { font-size: 22px !important; }
         
-        /* 1. 파란색 버튼 스타일 */
         div.stButton > button, 
         button[kind="primary"],
         div[data-testid="stCameraInput"] button {
@@ -60,12 +60,10 @@ st.markdown("""
             background-color: #0056b3 !important; 
         }
 
-        /* 2. 파일 업로더 텍스트 숨기기 */
         [data-testid="stFileUploader"] section[data-testid="stFileUploaderDropzone"] > div > div > small {
             display: none !important;
         }
 
-        /* 3. 부제목 스타일 */
         .subtitle-text {
             text-align: center; 
             color: #555; 
@@ -81,7 +79,6 @@ st.markdown("""
             margin-top: 5px;  
         }
 
-        /* 4. 요약 박스 스타일 (하늘색 디자인 유지) */
         .summary-box {
             background-color: #F0F7FF; 
             padding: 25px; 
@@ -94,7 +91,6 @@ st.markdown("""
             margin-bottom: 20px;
         }
 
-        /* 5. 아이콘 레이아웃 (90px 고정 + 자동 줄바꿈) */
         .icon-row-container {
             display: flex;
             flex-wrap: wrap;        
@@ -152,98 +148,92 @@ def get_image_base64(image_path):
     with open(image_path, "rb") as img_file:
         return base64.b64encode(img_file.read()).decode('utf-8')
 
+# 🔊 TTS 언어 코드 매핑 함수
+def get_tts_lang_code(lang_name):
+    lang_map = {
+        '한국어': 'ko', 'Korean': 'ko',
+        '영어': 'en', 'English': 'en',
+        '중국어': 'zh-CN', 'Chinese': 'zh-CN',
+        '베트남어': 'vi', 'Vietnamese': 'vi',
+        '필리핀어': 'tl', 'Tagalog': 'tl', 'Filipino': 'tl',
+        '태국어': 'th', 'Thai': 'th',
+        '일본어': 'ja', 'Japanese': 'ja',
+        '러시아어': 'ru', 'Russian': 'ru',
+        '프랑스어': 'fr', 'France': 'fr',
+        '스페인어': 'es', 'Spain': 'es'
+    }
+    # 매칭되는 게 없으면 기본 영어(en) 설정
+    return lang_map.get(lang_name.split(' ')[0], 'en')
+
 # ==========================================
-# 4. 다국어 UI 사전 (모든 언어 그대로 유지)
+# 4. 다국어 UI 사전
 # ==========================================
 ui_lang = {
     "한국어": {
         "subtitle": "모든 가정을 위한 스마트 알림장<br><span class='subtitle-eng'>Smart Notice for All Families</span>",
-        "tab_camera": "📸 사진 찍기", 
-        "tab_upload": "📂 앨범에서 가져오기", 
-        "cam_label": "알림장이나 안내문을 사진 찍어 주세요", 
-        "upload_label": "👇 여기를 눌러 앨범에서 사진을 고르세요",
-        "result_header": "🎨 준비물 그림 확인",
-        "summary_header": "📢 핵심 내용 요약", "trans_btn": "번역문 보기"
+        "tab_camera": "📸 사진 찍기", "tab_upload": "📂 앨범에서 가져오기", 
+        "cam_label": "알림장이나 안내문을 사진 찍어 주세요", "upload_label": "👇 여기를 눌러 앨범에서 사진을 고르세요",
+        "result_header": "🎨 준비물 그림 확인", "summary_header": "📢 핵심 내용 요약", "trans_btn": "번역문 보기"
     },
     "영어": { 
         "subtitle": "Smart Notice for All Families",
         "tab_camera": "📸 Take Photo", "tab_upload": "📂 Upload",
-        "cam_label": "Please take a photo of the notice", 
-        "upload_label": "Upload Image File",
-        "result_header": "🎨 Supplies Icons",
-        "summary_header": "📢 Summary", "trans_btn": "View Translation"
+        "cam_label": "Please take a photo of the notice", "upload_label": "Upload Image File",
+        "result_header": "🎨 Supplies Icons", "summary_header": "📢 Summary", "trans_btn": "View Translation"
     },
     "중국어": { 
         "subtitle": "为所有家庭提供的智能通知",
         "tab_camera": "📸 拍照", "tab_upload": "📂 上传照片",
-        "cam_label": "请拍摄通知单或公告", 
-        "upload_label": "上传照片",
-        "result_header": "🎨 准备物品图标",
-        "summary_header": "📢 核心摘要", "trans_btn": "查看翻译"
+        "cam_label": "请拍摄通知单或公告", "upload_label": "上传照片",
+        "result_header": "🎨 准备物品图标", "summary_header": "📢 核心摘要", "trans_btn": "查看翻译"
     },
     "베트남어": { 
         "subtitle": "Thông báo thông minh cho mọi gia đình",
         "tab_camera": "📸 Chụp ảnh", "tab_upload": "📂 Tải ảnh lên",
-        "cam_label": "Vui lòng chụp ảnh thông báo", 
-        "upload_label": "Tải ảnh lên",
-        "result_header": "🎨 Hình ảnh chuẩn bị",
-        "summary_header": "📢 Tóm tắt nội dung", "trans_btn": "Xem bản dịch"
+        "cam_label": "Vui lòng chụp ảnh thông báo", "upload_label": "Tải ảnh lên",
+        "result_header": "🎨 Hình ảnh chuẩn bị", "summary_header": "📢 Tóm tắt nội dung", "trans_btn": "Xem bản dịch"
     },
     "필리핀어": { 
         "subtitle": "Smart Notification para sa Lahat ng Pamilya",
         "tab_camera": "📸 Kumuha ng litrato", "tab_upload": "📂 I-upload",
-        "cam_label": "Paki-picturan ang notice o anunsyo", 
-        "upload_label": "I-upload ang larawan",
-        "result_header": "🎨 Mga Kailangan",
-        "summary_header": "📢 Buod", "trans_btn": "Tingnan ang Salin"
+        "cam_label": "Paki-picturan ang notice o anunsyo", "upload_label": "I-upload ang larawan",
+        "result_header": "🎨 Mga Kailangan", "summary_header": "📢 Buod", "trans_btn": "Tingnan ang Salin"
     },
     "태국어": { 
         "subtitle": "การแจ้งเตือนอัจฉริยะสำหรับทุกครอบครัว",
         "tab_camera": "📸 ถ่ายภาพ", "tab_upload": "📂 อัปโหลด",
-        "cam_label": "กรุณาถ่ายภาพประกาศ", 
-        "upload_label": "อัปโหลดรูปภาพ",
-        "result_header": "🎨 สิ่งที่ต้องเตรียม",
-        "summary_header": "📢 สรุป", "trans_btn": "ดูคำแปล"
+        "cam_label": "กรุณาถ่ายภาพประกาศ", "upload_label": "อัปโหลดรูปภาพ",
+        "result_header": "🎨 สิ่งที่ต้องเตรียม", "summary_header": "📢 สรุป", "trans_btn": "ดูคำแปล"
     },
     "일본어": {
         "subtitle": "すべての家庭のためのスマート連絡帳",
         "tab_camera": "📸 写真を撮る", "tab_upload": "📂 アルバム",
-        "cam_label": "連絡帳を撮影してください", 
-        "upload_label": "写真をアップロード",
-        "result_header": "🎨 持ち物確認",
-        "summary_header": "📢 要約", "trans_btn": "翻訳を見る"
+        "cam_label": "連絡帳を撮影してください", "upload_label": "写真をアップロード",
+        "result_header": "🎨 持ち物確認", "summary_header": "📢 要約", "trans_btn": "翻訳を見る"
     },
     "러시아어": { 
         "subtitle": "Умные уведомления для всех семей",
         "tab_camera": "📸 Сделать фото", "tab_upload": "📂 Загрузить",
-        "cam_label": "Сфотографируйте уведомление", 
-        "upload_label": "Загрузить фото",
-        "result_header": "🎨 Предметы",
-        "summary_header": "📢 Сводка", "trans_btn": "Посмотреть перевод"
+        "cam_label": "Сфотографируйте уведомление", "upload_label": "Загрузить фото",
+        "result_header": "🎨 Предметы", "summary_header": "📢 Сводка", "trans_btn": "Посмотреть перевод"
     },
     "몽골어": {
         "subtitle": "Бүх гэр бүлд зориулсан ухаалаг мэдэгдэл",
         "tab_camera": "📸 Зураг авах", "tab_upload": "📂 Байршуулах",
-        "cam_label": "Мэдэгдлийн зургийг авна уу", 
-        "upload_label": "Зураг байршуулах",
-        "result_header": "🎨 Бэлтгэл зүйлс",
-        "summary_header": "📢 Хураангуй", "trans_btn": "Орчуулгыг харах"
+        "cam_label": "Мэдэгдлийн зургийг авна уу", "upload_label": "Зураг байршуулах",
+        "result_header": "🎨 Бэлтгэл зүйлс", "summary_header": "📢 Хураангуй", "trans_btn": "Орчуулгыг харах"
     },
     "우즈베크어": { 
         "subtitle": "Barcha oilalar uchun aqlli xabarnoma",
         "tab_camera": "📸 Rasmga olish", "tab_upload": "📂 Yuklash",
-        "cam_label": "E'lonni rasmga oling", 
-        "upload_label": "Rasmni yuklash",
-        "result_header": "🎨 Kerakli narsalar",
-        "summary_header": "📢 Xulosa", "trans_btn": "Tarjimani ko'rish"
+        "cam_label": "E'lonni rasmga oling", "upload_label": "Rasmni yuklash",
+        "result_header": "🎨 Kerakli narsalar", "summary_header": "📢 Xulosa", "trans_btn": "Tarjimani ko'rish"
     },
     "캄보디아어": { 
         "subtitle": "ការជូនដំណឹងឆ្លាតវៃសម្រាប់គ្រួសារទាំងអស់",
         "tab_camera": "📸 ថតរូប", "tab_upload": "📂 ផ្ទុកឡើង",
-        "cam_label": "សូមចុចប៊ូតុងកាមេរ៉ាខាងក្រោម", 
-        "upload_label": "បញ្ចូលរូបថត",
-        "result_header": "🎨 សម្ភារៈ",
-        "summary_header": "📢 សង្ខេប", "trans_btn": "មើលការបកប្រែ"
+        "cam_label": "សូមចុចប៊ូតុងកាមេរ៉ាខាងក្រោម", "upload_label": "បញ្ចូលរូបថត",
+        "result_header": "🎨 សម្ភារៈ", "summary_header": "📢 សង្ខេប", "trans_btn": "មើលការបកប្រែ"
     }
 }
 
@@ -269,8 +259,6 @@ def get_ui_language(user_input):
 # ==========================================
 # 6. [제목] 상단 배너 이미지 & 타이틀 배치
 # ==========================================
-
-# 1) 배너 파일 찾기
 banner_candidates = ["banner.jpg", "banner.png", "banner.jpeg", "image_2c0b96.jpg"]
 banner_found = False
 
@@ -284,7 +272,6 @@ for filename in banner_candidates:
 if not banner_found:
     st.caption("※ 배너 이미지를 assets 폴더에 넣어주세요.")
 
-# 2) 타이틀 문구
 st.markdown("""
     <h1 style='color: #FF9F1C; text-align: center; margin-top: 10px; margin-bottom: 0px;'>
         🏫 모두의 AI 알림장
@@ -350,7 +337,7 @@ else:
 st.divider()
 
 # ==========================================
-# 8. 메인 화면 (탭 방식 유지)
+# 8. 메인 화면
 # ==========================================
 st.markdown(f"""
     <div class='subtitle-text'><h3>{current_ui['subtitle']}</h3></div>
@@ -479,10 +466,24 @@ if img_file and final_target_lang:
             
             # [결과 2] 요약 (하늘색 박스)
             st.markdown(f"### {current_ui['summary_header']}")
-            summary_text = data.get('summary', '요약 없음').replace('\n', '<br>')
+            
+            # 🔊 TTS 생성 및 재생 코드 추가
+            summary_text = data.get('summary', '요약 없음')
+            
+            # 오디오 생성
+            try:
+                tts_lang = get_tts_lang_code(final_target_lang)
+                tts = gTTS(text=summary_text, lang=tts_lang)
+                mp3_fp = io.BytesIO()
+                tts.write_to_fp(mp3_fp)
+                st.audio(mp3_fp, format='audio/mp3') # 오디오 플레이어 표시
+            except Exception as e:
+                st.warning("🔊 음성을 생성하지 못했습니다.")
+
+            # 텍스트 표시
             st.markdown(f"""
                 <div class='summary-box'>
-                    {summary_text}
+                    {summary_text.replace('\n', '<br>')}
                 </div>
             """, unsafe_allow_html=True)
             
@@ -498,24 +499,31 @@ if img_file and final_target_lang:
             st.markdown(f"<div class='error-details'>{str(e)}</div>", unsafe_allow_html=True)
 
 # ==========================================
-# 10. [하단] 앱 설치 방법 가이드 (사이드바 제거 -> 맨 아래로 이동)
+# 10. [하단] 앱 설치 방법 가이드 (영어 병기)
 # ==========================================
-st.divider() # 구분선 한 줄 긋기
+st.divider() 
 
-with st.expander("📲 앱 설치 방법 보기 (여기를 누르세요)", expanded=False):
+with st.expander("📲 앱 설치 방법 보기 (Install App Guide)", expanded=False):
     st.markdown("""
     <div style='background-color: #f0f2f6; padding: 15px; border-radius: 10px;'>
-        <b style='color: #007BFF;'>안드로이드 (갤럭시)</b><br>
+        <b style='color: #007BFF;'>안드로이드 (Samsung Galaxy)</b><br>
         1. 화면 오른쪽 위(또는 아래) <b>점 3개(⋮)</b> 클릭<br>
+           <span style='color:gray; font-size:0.9em;'>(Click the 3 dots at the top right)</span><br>
         2. <b>[홈 화면에 추가]</b> 또는 <b>[앱 설치]</b> 클릭<br>
+           <span style='color:gray; font-size:0.9em;'>(Click 'Add to Home screen' or 'Install App')</span><br>
         3. <b>[추가]</b> 버튼 클릭<br>
+           <span style='color:gray; font-size:0.9em;'>(Click 'Add')</span><br>
         <br>
-        <b style='color: #007BFF;'>아이폰 (iOS)</b><br>
+        <b style='color: #007BFF;'>아이폰 (iPhone iOS)</b><br>
         1. 화면 아래 <b>내보내기(공유) 버튼</b> 클릭<br>
+           <span style='color:gray; font-size:0.9em;'>(Click the Share button at the bottom)</span><br>
         2. 메뉴를 올려서 <b>[홈 화면에 추가]</b> 클릭<br>
+           <span style='color:gray; font-size:0.9em;'>(Scroll down and click 'Add to Home Screen')</span><br>
         3. 오른쪽 위 <b>[추가]</b> 클릭<br>
+           <span style='color:gray; font-size:0.9em;'>(Click 'Add' at the top right)</span><br>
         <br>
         <hr>
-        💡 <b>가족 채팅방</b>에 이 주소를 공유해두면 설치 없이도 편하게 쓸 수 있어요!
+        💡 <b>'카카오톡' 가족 채팅방</b>에 이 주소를 공유해두면 설치 없이도 편하게 쓸 수 있어요!<br>
+        <span style='color:gray; font-size:0.9em;'>(Share this link in your family chat room for easy access!)</span>
     </div>
     """, unsafe_allow_html=True)
