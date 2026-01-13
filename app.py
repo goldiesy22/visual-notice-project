@@ -8,7 +8,7 @@ from gtts import gTTS
 import io
 
 # ==========================================
-# 1. 설정 및 모델 "강제" 지정 (수정됨)
+# 1. 설정 및 모델 "동적" 탐색 (절대 실패 없음)
 # ==========================================
 
 if "GOOGLE_API_KEY" in st.secrets:
@@ -19,45 +19,55 @@ else:
 
 genai.configure(api_key=GOOGLE_API_KEY)
 
-# 🚨 [모델 연결 로직 수정]
-# 2.5-flash(20회 제한)가 잡히는 것을 막기 위해 '1.5'가 포함된 모델만 강제로 찾습니다.
+# 🚨 [최후의 수단] 하드코딩된 이름 대신, 실제 서버 명단에서 골라잡기
 try:
-    # 1. 서버에 있는 모델 명단을 다 가져옵니다.
-    all_models = [m.name for m in genai.list_models()]
+    # 1. 현재 사용 가능한 모델 명단 조회 (list_models)
+    available_models = []
+    for m in genai.list_models():
+        if 'generateContent' in m.supported_generation_methods:
+            available_models.append(m.name)
     
-    final_model_name = None
+    # 2. 연결할 모델 찾기 (우선순위 로직)
+    selected_model_name = None
     
-    # 2. 우리가 원하는 "안전한 모델(1.5)" 우선순위 목록
-    priority_targets = [
-        "gemini-1.5-flash",       # 1순위: 표준 1.5 Flash
-        "gemini-1.5-flash-001",   # 2순위: 구버전 호환 1.5 Flash
-        "gemini-1.5-flash-002",   # 3순위: 최신 안정화 1.5 Flash
-        "gemini-1.5-pro",         # 4순위: Flash가 정 안되면 Pro라도 씀
+    # 우리가 원하는 모델 키워드 (위에서부터 순서대로 찾음)
+    # 2.5 버전은 횟수제한 때문에 제외, 1.5 Flash를 최우선으로 찾음
+    priority_keywords = [
+        "gemini-1.5-flash", 
+        "flash", 
+        "gemini-1.5-pro",
+        "gemini-1.0-pro",
+        "gemini-pro"
     ]
 
-    # 3. 명단 대조 (2.5 버전이나 latest는 절대 안 뽑히게 함)
-    for target in priority_targets:
-        for available in all_models:
-            # 명단에 target 이름이 포함되어 있고, "2.5"나 "latest"가 아니어야 함
-            if target in available and "2.5" not in available and "latest" not in available:
-                final_model_name = available
+    for keyword in priority_keywords:
+        for model_name in available_models:
+            # 키워드가 포함되어 있고, 'experimental'이나 '2.5' 같은 위험한 건 뺌
+            if keyword in model_name and "experimental" not in model_name and "2.5" not in model_name:
+                selected_model_name = model_name
                 break
-        if final_model_name:
+        if selected_model_name:
             break
-            
-    # 4. 모델 연결
-    if final_model_name:
-        model = genai.GenerativeModel(final_model_name)
-        # (확인용) 사이드바에 연결된 모델명 표시 (성공 시 gemini-1.5-flash... 가 떠야 함)
-        st.sidebar.success(f"✅ 연결 모델: {final_model_name}")
+    
+    # 3. 만약 위에서 못 찾았으면, 그냥 목록의 첫 번째 놈이라도 잡음 (404 방지)
+    if not selected_model_name and available_models:
+        selected_model_name = available_models[0]
+
+    # 4. 최종 연결
+    if selected_model_name:
+        model = genai.GenerativeModel(selected_model_name)
+        # [디버깅] 사이드바에 어떤 모델이 잡혔는지 표시 (성공 확인용)
+        st.sidebar.success(f"✅ 연결된 모델: {selected_model_name}")
     else:
-        # 비상용: 명단에서 못 찾아도 강제로 1.5를 지정 (라이브러리 믿고 던짐)
-        model = genai.GenerativeModel('gemini-1.5-flash')
-        st.sidebar.warning("⚠️ 강제 지정 모드: gemini-1.5-flash")
+        # 명단조차 못 가져오면 진짜 심각한 상황
+        st.error("🚨 사용 가능한 모델이 하나도 없습니다. (라이브러리 오류 가능성)")
+        st.stop()
 
 except Exception as e:
-    st.error(f"❌ 모델 설정 오류: {e}")
-    st.stop()
+    st.error(f"❌ 모델 설정 중 오류: {e}")
+    st.sidebar.error(f"Error Details: {e}")
+    # 비상용 기본값 (이것마저 안 되면 requirements 문제임)
+    model = genai.GenerativeModel('gemini-pro')
 
 
 ASSETS_DIR = "assets"
