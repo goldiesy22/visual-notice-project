@@ -256,10 +256,23 @@ def get_ui_language(user_input):
     return ui_lang["영어"]
 
 # ==========================================
-# 6. [제목] 상단 배치 (배너 이미지 있으면 교체 가능)
+# 6. [제목] 상단 배너 이미지 & 타이틀 배치
 # ==========================================
+# 1) 상단 배너 이미지 표시
+banner_path = os.path.join(ASSETS_DIR, "banner.jpg") # ⚠️ 파일명 확인! (jpg/png)
+
+# 배너 파일이 있으면 표시, 없으면 그냥 넘어감
+if os.path.exists(banner_path):
+    st.image(banner_path, use_container_width=True)
+else:
+    # 배너 파일이 없을 때를 대비한 대체 텍스트 (혹시 몰라서 남겨둠)
+    st.warning("⚠️ assets 폴더에 'banner.jpg' 파일을 넣어주세요.")
+
+# 2) 그 아래에 타이틀 문구 배치
 st.markdown("""
-    <h1 style='color: #FF9F1C; text-align: center; margin-bottom: 0px;'>🏫 모두의 AI 알림장</h1>
+    <h1 style='color: #FF9F1C; text-align: center; margin-top: 10px; margin-bottom: 0px;'>
+        🏫 모두의 AI 알림장
+    </h1>
 """, unsafe_allow_html=True)
 
 # ==========================================
