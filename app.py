@@ -8,7 +8,7 @@ from gtts import gTTS
 import io
 
 # ==========================================
-# 1. [절대 안전] 모델 고정 연결 (latest 금지)
+# 1. [실전 테스트] 작동하는 모델 찾을 때까지 노크하기
 # ==========================================
 
 if "GOOGLE_API_KEY" in st.secrets:
@@ -19,54 +19,55 @@ else:
 
 genai.configure(api_key=GOOGLE_API_KEY)
 
-# 1. 버전 확인
-current_version = genai.__version__
-st.sidebar.markdown(f"**🛠 도구 버전:** `{current_version}`")
+# 버전 확인
+st.sidebar.markdown(f"**🛠 도구 버전:** `{genai.__version__}`")
 
-# 2. 내 사용 가능 모델 명단 조회 (디버깅용)
-try:
-    my_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
-except:
-    my_models = []
-
-# 사이드바에 명단 출력 (사용자 확인용)
-with st.sidebar.expander("📋 내 API 모델 명단", expanded=True):
-    st.write(my_models)
-
-# 3. 모델 연결 로직 (수정됨: latest 절대 금지)
-target_model_name = None
-
-# 우선순위: 가장 안정적인 1.5 Flash 구버전 -> 신버전 -> Pro -> 1.0 Pro
-# *주의: 'latest'나 'exp'는 절대 넣지 않음
-safe_list = [
-    "models/gemini-1.5-flash-001",  # 가장 호환성 좋음
-    "models/gemini-1.5-flash",      # 표준
-    "models/gemini-1.5-flash-002",  # 최신 안정화
-    "models/gemini-1.5-pro",        # Pro 버전
-    "models/gemini-1.5-pro-001",
-    "models/gemini-1.0-pro",        # 구형 Pro (가장 안전)
-    "models/gemini-pro"
+# 🚨 [접속 테스트] 명단만 보고 믿지 않고, 실제로 찔러봅니다.
+# 순서: 8b(가벼움) -> 표준 Flash -> 002(최신) -> Pro -> 구형 Pro
+# (2.5나 2.0은 횟수 제한 때문에 아예 테스트 목록에서 뺍니다)
+candidates = [
+    "models/gemini-1.5-flash-8b",   # 1순위: 히든카드 (이게 될 확률 높음)
+    "models/gemini-1.5-flash",      # 2순위: 표준
+    "models/gemini-1.5-flash-001",  # 3순위: 구버전
+    "models/gemini-1.5-flash-002",  # 4순위: 최신
+    "models/gemini-1.5-pro",        # 5순위: 고급
+    "models/gemini-1.0-pro",        # 6순위: 구형
+    "models/gemini-pro"             # 7순위: 최후의 보루
 ]
 
-# 1차: 내 명단에 있는 것 중 매칭
-for safe in safe_list:
-    if safe in my_models:
-        target_model_name = safe
-        break
+active_model = None
+log_msg = ""
 
-# 2차: 명단에 없어도, 표준 이름으로 강제 시도 (숨겨진 모델 접근)
-if not target_model_name:
-    target_model_name = "models/gemini-1.5-flash-001"
-    st.sidebar.warning("⚠️ 목록에 없어 001 버전 강제 연결")
+# 하나씩 실제로 연결해서 "안녕"이라고 보내봅니다.
+with st.sidebar.status("🤖 AI 모델 연결 테스트 중...", expanded=True) as status:
+    for name in candidates:
+        try:
+            status.write(f"시도 중: `{name}`...")
+            temp_model = genai.GenerativeModel(name)
+            # 🚀 [핵심] 실제로 통신을 시도합니다. (Quota 확인 겸용)
+            # 아주 짧은 토큰을 보내서 404나 429가 뜨는지 확인
+            response = temp_model.generate_content("a") 
+            
+            # 여기까지 에러 없이 오면 성공!
+            active_model = temp_model
+            status.update(label="✅ 연결 성공!", state="complete", expanded=False)
+            st.sidebar.success(f"**최종 연결:**\n`{name}`")
+            break
+        except Exception as e:
+            # 실패하면 다음 후보로 넘어감
+            # st.sidebar.warning(f"{name} 실패") # 너무 시끄러우니 주석 처리
+            continue
 
-# 4. 최종 연결
-try:
-    model = genai.GenerativeModel(target_model_name)
-    st.sidebar.success(f"✅ 최종 연결: `{target_model_name}`")
-except Exception as e:
-    st.error(f"모델 연결 실패: {e}")
-    # 정말 최악의 경우 1.0 Pro로 연결
-    model = genai.GenerativeModel("models/gemini-pro")
+# 만약 테스트를 다 통과 못했으면?
+if not active_model:
+    st.error("🚨 모든 안전한 모델 연결에 실패했습니다.")
+    try:
+        my_list = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
+        st.error(f"내 API 키로 가능한 모델 목록: {my_list}")
+        st.info("목록에 있는 모델이 위 후보군에 없다면, API 키 권한 문제일 수 있습니다.")
+    except:
+        st.error("모델 목록 조회조차 실패했습니다.")
+    st.stop()
 
 
 ASSETS_DIR = "assets"
@@ -421,7 +422,8 @@ if img_file and final_target_lang:
         """
         
         try:
-            response = model.generate_content([prompt, image])
+            # 🚨 [중요] 위에서 테스트로 통과한 active_model을 사용
+            response = active_model.generate_content([prompt, image])
             text_response = response.text
             if "```json" in text_response:
                 text_response = text_response.split("```json")[1].split("```")[0]
