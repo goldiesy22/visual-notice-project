@@ -272,7 +272,24 @@ def get_ui_language(user_input):
 # ==========================================
 # 6. [제목] 상단 배너 이미지 & 타이틀 배치
 # ==========================================
-
+# ==========================================
+# [추가] 제목 바로 아래에 설치 가이드 배치 (사이드바보다 훨씬 잘 보임!)
+# ==========================================
+with st.expander("📲 앱 설치 방법 보기 (여기를 누르세요)", expanded=False):
+    st.markdown("""
+    <div style='background-color: #f0f2f6; padding: 15px; border-radius: 10px;'>
+        <b style='color: #007BFF;'>안드로이드 (갤럭시)</b><br>
+        1. 오른쪽 위 <b>점 3개(⋮)</b> 클릭<br>
+        2. <b>[홈 화면에 추가]</b> 또는 <b>[앱 설치]</b> 클릭<br>
+        <br>
+        <b style='color: #007BFF;'>아이폰 (iOS)</b><br>
+        1. 화면 아래 <b>내보내기(공유) 버튼</b> 클릭<br>
+        2. <b>[홈 화면에 추가]</b> 클릭<br>
+        <br>
+        <hr>
+        💡 <b>가족 채팅방</b>에 이 주소를 공유해두면 설치 없이도 편하게 쓸 수 있어요!
+    </div>
+    """, unsafe_allow_html=True)
 # 1) 배너 파일 찾기 (jpg, png, jpeg 다 찾아봄)
 banner_candidates = ["banner.jpg", "banner.png", "banner.jpeg", "image_2c0b96.jpg"]
 banner_found = False
