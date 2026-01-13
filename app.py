@@ -11,8 +11,8 @@ import io
 # 1. [정품 인증] 1.5 Flash 표준 모델 연결
 # ==========================================
 
-if "GOOGLE_API_KEY" in st.secrets:
-    GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
+# 🚨 테스트용 (따옴표 안에 복사한 키를 바로 넣으세요!)
+GOOGLE_API_KEY = "AIzaSyDC0TbYKns966JZBv-1dWGbq-rBQs0guh4"
 else:
     st.error("🚨 API 키가 없습니다! Secrets 설정을 확인해주세요.")
     st.stop()
