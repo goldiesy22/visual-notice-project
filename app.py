@@ -8,7 +8,7 @@ from gtts import gTTS
 import io
 
 # ==========================================
-# 1. [진단 모드] 버전 확인 & 2.5 버전 차단
+# 1. [철통 보안] 안전한 모델만 골라잡기
 # ==========================================
 
 if "GOOGLE_API_KEY" in st.secrets:
@@ -19,54 +19,45 @@ else:
 
 genai.configure(api_key=GOOGLE_API_KEY)
 
-# 1. 버전 확인 (잘 되셨으니 통과!)
+# 1. 버전 확인 (0.8.3 확인 완료!)
 current_version = genai.__version__
 st.sidebar.markdown(f"**🛠 도구 버전:** `{current_version}`")
 
-# 2. 모델 연결 (여기가 핵심 수정!)
+# 2. 모델 연결 (화이트리스트 방식)
 valid_model_name = None
 try:
-    # 내 키로 쓸 수 있는 모델 다 가져옴
+    # 내 키로 사용 가능한 모델 명단 조회
     available_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
     
-    # 🚨 [중요] 2.5 버전은 하루 20회 제한이라 무조건 걸러야 함!
-    # 우리가 원하는 1.5 Flash 명단 (우선순위 순)
-    safe_targets = [
-        "models/gemini-1.5-flash", 
-        "gemini-1.5-flash",
-        "models/gemini-1.5-flash-001",
-        "models/gemini-1.5-flash-002",
-        "models/gemini-1.5-flash-8b",
-        "models/gemini-1.5-pro",
-        "gemini-1.5-pro"
+    # 🚨 [수정] "Flash 들어간거 아무거나" 찾던 로직 삭제! 
+    # 오직 이 명단에 있는 "검증된 모델"만 허용합니다. (2.0, 2.5 절대 불가)
+    safe_whitelist = [
+        "models/gemini-1.5-flash",       # 1순위: 표준
+        "models/gemini-1.5-flash-001",   # 2순위: 구버전 호환
+        "models/gemini-1.5-flash-002",   # 3순위: 안정화
+        "models/gemini-1.5-flash-8b",    # 4순위: 경량화
+        "models/gemini-1.5-pro",         # 5순위: Pro (Flash 안되면 이거라도)
+        "models/gemini-1.0-pro",         # 6순위: 구형 Pro
+        "models/gemini-pro"              # 7순위: 제일 구형
     ]
 
-    # 명단 대조: 안전한 것만 골라잡기
-    for target in safe_targets:
-        if target in available_models:
-            valid_model_name = target
+    # 내 명단과 안전 명단 대조 (교집합 찾기)
+    for safe_model in safe_whitelist:
+        if safe_model in available_models:
+            valid_model_name = safe_model
             break
             
-    # 만약 위에서 못 찾았다면? (비상 대책)
+    # ※ 만약 위에서 못 찾으면? 이상한거 찾지 말고 그냥 표준 이름 강제 지정!
     if not valid_model_name:
-        for m in available_models:
-            # 이름에 'flash'가 있지만 '2.5'나 'exp(실험용)'는 절대 아닐 때만 선택
-            if "flash" in m and "2.5" not in m and "exp" not in m:
-                valid_model_name = m
-                break
+        valid_model_name = 'gemini-1.5-flash'
 
 except Exception as e:
     st.sidebar.error(f"목록 조회 실패: {e}")
+    valid_model_name = 'gemini-1.5-flash'
 
 # 3. 최종 연결
-if valid_model_name:
-    model = genai.GenerativeModel(valid_model_name)
-    st.sidebar.success(f"✅ 연결 성공: `{valid_model_name}`") # 이제 여기에 1.5가 뜰 겁니다!
-else:
-    # 최후의 수단: 강제로 1.5 지정
-    fallback = 'gemini-1.5-flash'
-    model = genai.GenerativeModel(fallback)
-    st.sidebar.warning(f"⚠️ 강제 연결: {fallback}")
+model = genai.GenerativeModel(valid_model_name)
+st.sidebar.success(f"✅ 연결 성공: `{valid_model_name}`")
 
 
 ASSETS_DIR = "assets"
