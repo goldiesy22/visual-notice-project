@@ -21,7 +21,7 @@ else:
 genai.configure(api_key=GOOGLE_API_KEY)
 
 # 🚨 [모델] latest 버전 유지
-model = genai.GenerativeModel('gemini-1.5-flash')
+model = genai.GenerativeModel('gemini-1.5-flash-latest')
 
 ASSETS_DIR = "assets"
 
