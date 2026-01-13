@@ -8,7 +8,7 @@ from gtts import gTTS
 import io
 
 # ==========================================
-# 1. [마지막 희망] 2.0 Lite 모델 강제 연결
+# 1. [정품 인증] 1.5 Flash 표준 모델 연결
 # ==========================================
 
 if "GOOGLE_API_KEY" in st.secrets:
@@ -22,53 +22,48 @@ genai.configure(api_key=GOOGLE_API_KEY)
 # 1. 버전 확인
 st.sidebar.markdown(f"**🛠 도구 버전:** `{genai.__version__}`")
 
-# 2. [전략 수정] 사용자 목록에 있는 'Lite' 모델을 최우선으로 찾음
-# 1.5가 없으므로 2.0 Lite를 노립니다.
+# 2. 모델 연결 (이제 꼼수는 필요 없습니다. 정공법으로 갑니다.)
+# 새 프로젝트 키라면 1.5 Flash가 100% 있습니다.
+target_model = None
 candidates = [
-    "models/gemini-2.0-flash-lite-preview-02-05", # 목록에 있던 것 1
-    "models/gemini-2.0-flash-lite",               # 목록에 있던 것 2
-    "models/gemini-1.5-flash",                    # 혹시나 해서 넣어둠
-    "models/gemini-1.5-flash-001",
-    "models/gemini-1.5-flash-8b",
-    "models/gemini-1.5-pro",
-    "models/gemini-pro"
+    "models/gemini-1.5-flash",       # 1순위: 표준 (가장 빠름)
+    "models/gemini-1.5-flash-001",   # 2순위: 호환용
+    "models/gemini-1.5-pro",         # 3순위: 고성능
 ]
 
-active_model = None
-
-# 연결 테스트
-with st.sidebar.status("🤖 사용 가능한 모델 찾는 중...", expanded=True) as status:
-    # 1. 내 API 키로 쓸 수 있는 목록 가져오기
+with st.sidebar.status("🚀 AI 모델 연결 중...", expanded=True) as status:
+    # 내 키로 쓸 수 있는 목록 조회
     try:
-        my_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
-        status.write(f"내 목록 개수: {len(my_models)}개")
+        my_models = [m.name for m in genai.list_models()]
     except:
         my_models = []
-        status.write("목록 조회 실패")
 
-    # 2. 후보군 매칭 (내 목록에 있는 것 중에서만 시도)
-    for candidate in candidates:
-        if candidate in my_models:
-            status.write(f"시도: `{candidate}`")
+    # 후보군 순서대로 연결 시도
+    for name in candidates:
+        if name in my_models:
+            status.write(f"시도: `{name}`")
             try:
-                # 연결 및 통신 테스트
-                temp_model = genai.GenerativeModel(candidate)
-                # 아주 짧은 테스트 (Quota 확인)
-                temp_model.generate_content("test")
+                # 연결 테스트
+                model = genai.GenerativeModel(name)
+                # '안녕하세요' 한 마디 보내서 진짜 되는지 확인
+                model.generate_content("hello") 
                 
-                active_model = temp_model
-                st.sidebar.success(f"✅ 연결 성공: `{candidate}`")
+                target_model = model
+                st.sidebar.success(f"✅ 연결 성공: `{name}`")
                 status.update(label="연결 완료!", state="complete", expanded=False)
                 break
             except Exception as e:
-                status.write(f"❌ 실패 ({candidate}): {e}")
+                status.write(f"❌ 실패: {e}")
                 continue
 
-# 3. 실패 시 대책
-if not active_model:
-    st.error("🚨 이 API 키로는 사용 가능한 무료 모델을 찾을 수 없습니다.")
-    st.info("💡 해결책: 구글 AI Studio에서 **'새 프로젝트'**를 만들고 API 키를 다시 발급받으세요. (현재 키는 1.5 버전 권한이 없습니다)")
-    st.stop()
+# 3. 만약 연결에 실패했다면? (새 키가 제대로 안 들어간 경우)
+if not target_model:
+    st.error("🚨 모델 연결 실패! (새 API 키가 제대로 저장되지 않았을 수 있습니다.)")
+    st.info("Manage app > Settings > Secrets 에 '새로운 키'가 잘 들어갔는지 확인해주세요.")
+    # 비상용으로 강제 지정
+    target_model = genai.GenerativeModel("models/gemini-1.5-flash")
+
+model = target_model
 
 
 ASSETS_DIR = "assets"
@@ -392,7 +387,7 @@ with tab2:
     if uploaded_img: img_file = uploaded_img
 
 if img_file and final_target_lang:
-    # 🚨 [중요] model 객체를 여기서 다시 정의하지 않고, 위에서 찾은 active_model을 씁니다.
+    # 🚨 [중요] 위에서 찾은 안전한 target_model 사용
     with st.spinner(f"🤖 AI가 분석 중입니다... (Target: {final_target_lang})"):
         raw_image = Image.open(img_file)
         image = resize_image_for_speed(raw_image)
@@ -424,7 +419,7 @@ if img_file and final_target_lang:
         """
         
         try:
-            response = active_model.generate_content([prompt, image])
+            response = model.generate_content([prompt, image])
             text_response = response.text
             if "```json" in text_response:
                 text_response = text_response.split("```json")[1].split("```")[0]
