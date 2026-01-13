@@ -569,3 +569,18 @@ with st.expander("📲 앱 설치 방법 보기 (Install App Guide)", expanded=F
         <span style='color:gray; font-size:0.9em;'>(Share this link in your family chat room for easy access!)</span>
     </div>
     """, unsafe_allow_html=True)
+
+# ==========================================
+# 🚨 [비상용] 내 API 키로 쓸 수 있는 모델 명단 확인하기
+# ==========================================
+with st.sidebar:
+    st.divider()
+    if st.button("🔍 내 사용 가능 모델 찾기 (Debug)"):
+        st.write("👇 현재 내 API 키로 사용 가능한 모델 목록:")
+        try:
+            # 구글 서버에 직접 물어봐서 명단을 가져옵니다.
+            for m in genai.list_models():
+                if 'generateContent' in m.supported_generation_methods:
+                    st.code(m.name) # 화면에 모델 이름을 그대로 보여줌
+        except Exception as e:
+            st.error(f"확인 실패: {e}")
