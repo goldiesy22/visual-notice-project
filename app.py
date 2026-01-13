@@ -480,22 +480,25 @@ if img_file and final_target_lang:
             # [결과 2] 요약 (하늘색 박스)
             st.markdown(f"### {current_ui['summary_header']}")
             
-            # 🔊 TTS 생성 및 재생 코드 (수정됨: 되감기 추가)
+            # 🔊 TTS 생성 및 재생 코드 (최종 수정: 바이트 변환 적용)
             summary_text = data.get('summary', '요약 없음')
             
             # 오디오 생성
             try:
-                tts_lang = get_tts_lang_code(final_target_lang)
-                tts = gTTS(text=summary_text, lang=tts_lang)
-                mp3_fp = io.BytesIO()
-                tts.write_to_fp(mp3_fp)
-                
-                # 🚨 [중요] 파일 포인터를 맨 앞으로 되감기 (이게 없으면 오류 남!)
-                mp3_fp.seek(0) 
-                
-                st.audio(mp3_fp, format='audio/mp3') # 오디오 플레이어 표시
+                if summary_text.strip(): # 텍스트가 있을 때만 실행
+                    tts_lang = get_tts_lang_code(final_target_lang)
+                    tts = gTTS(text=summary_text, lang=tts_lang)
+                    mp3_fp = io.BytesIO()
+                    tts.write_to_fp(mp3_fp)
+                    mp3_fp.seek(0)
+                    
+                    # 👇 [핵심 변경] .getvalue()를 붙여서 데이터 덩어리로 줍니다. 포맷도 mpeg로 변경.
+                    st.audio(mp3_fp.getvalue(), format='audio/mpeg') 
+                else:
+                    st.warning("🔊 읽어줄 텍스트가 없습니다.")
             except Exception as e:
-                st.warning("🔊 음성을 생성하지 못했습니다.")
+                st.warning(f"🔊 음성 생성 실패: {e}")
+
             # 텍스트 표시
             st.markdown(f"""
                 <div class='summary-box'>
