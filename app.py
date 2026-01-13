@@ -45,6 +45,7 @@ st.markdown("""
     <style>
         html, body, [class*="st-"] { font-size: 22px !important; }
         
+        /* 1. 파란색 버튼 스타일 */
         div.stButton > button, 
         button[kind="primary"],
         div[data-testid="stCameraInput"] button {
@@ -60,10 +61,12 @@ st.markdown("""
             background-color: #0056b3 !important; 
         }
 
+        /* 2. 파일 업로더 텍스트 숨기기 */
         [data-testid="stFileUploader"] section[data-testid="stFileUploaderDropzone"] > div > div > small {
             display: none !important;
         }
 
+        /* 3. 부제목 스타일 */
         .subtitle-text {
             text-align: center; 
             color: #555; 
@@ -79,6 +82,7 @@ st.markdown("""
             margin-top: 5px;  
         }
 
+        /* 4. 요약 박스 스타일 (하늘색 디자인) */
         .summary-box {
             background-color: #F0F7FF; 
             padding: 25px; 
@@ -91,6 +95,7 @@ st.markdown("""
             margin-bottom: 20px;
         }
 
+        /* 5. 아이콘 레이아웃 (90px 고정 + 자동 줄바꿈) */
         .icon-row-container {
             display: flex;
             flex-wrap: wrap;        
@@ -123,9 +128,17 @@ st.markdown("""
             word-wrap: break-word; 
             line-height: 1.3;
         }
+        
+        /* 👇 [추가됨] 6. 중요 내용 텍스트 선택(드래그) 허용 */
+        .summary-box, p, li, .stMarkdown, div[data-testid="stMarkdownContainer"] {
+            -webkit-user-select: text !important;
+            -moz-user-select: text !important;
+            -ms-user-select: text !important;
+            user-select: text !important;
+            cursor: text !important;
+        }
     </style>
 """, unsafe_allow_html=True)
-
 # ==========================================
 # 3. 필수 함수들
 # ==========================================
