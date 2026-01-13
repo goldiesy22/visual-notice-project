@@ -8,7 +8,7 @@ from gtts import gTTS
 import io
 
 # ==========================================
-# 1. 설정 및 모델 "무조건 연결" 로직
+# 1. 버전 확인 및 모델 연결 (가장 중요!)
 # ==========================================
 
 if "GOOGLE_API_KEY" in st.secrets:
@@ -19,46 +19,24 @@ else:
 
 genai.configure(api_key=GOOGLE_API_KEY)
 
-# 🚨 [최종 해결책] 1.5 Flash가 안 되면 구형 모델이라도 잡는 '생존형' 연결 로직
-# 404 오류(모델 없음)를 방지하기 위해 가능한 모든 후보를 순서대로 찔러봅니다.
+# 🚨 [버전 검증] 현재 깔려있는 라이브러리 버전을 눈으로 확인합니다.
+current_version = genai.__version__
+st.sidebar.markdown(f"### 🔧 도구 버전: `{current_version}`")
+
+# 버전이 너무 낮으면 경고를 띄웁니다.
+if current_version < "0.8.3":
+    st.sidebar.error("🚨 버전이 너무 낮습니다! (0.8.3 이상 필요)")
+    st.sidebar.info("Manage app > Clear cache and Reboot를 꼭 다시 해주세요!")
+
+# 🚨 [모델 지정] 404 오류가 나도 무조건 이걸 써야 합니다. (이게 정답임)
+# 구버전 라이브러리라면 여기서 404가 뜨겠지만, 업데이트되면 무조건 성공합니다.
 try:
-    # 1. 내 키로 사용 가능한 모델 명단 조회
-    available_models = [m.name for m in genai.list_models()]
-    
-    # 2. 연결 후보군 (위에서부터 순서대로 시도)
-    # 2.5(실험용)는 횟수 제한 때문에 제외
-    candidate_list = [
-        "gemini-1.5-flash",       # 1순위: 최신 Flash
-        "gemini-1.5-flash-001",   # 2순위: 구버전 Flash
-        "gemini-1.5-flash-002",   # 3순위: 안정화 Flash
-        "gemini-1.5-flash-8b",    # 4순위: 경량화
-        "gemini-1.5-pro",         # 5순위: Pro 버전
-        "gemini-1.0-pro",         # 6순위: 구형 Pro (매우 안정적)
-        "gemini-pro"              # 7순위: 가장 구형 (이건 무조건 됨)
-    ]
-    
-    final_model_name = None
-
-    # 3. 교집합 찾기 (내 명단에 있는 것 중 가장 좋은 것 선택)
-    for candidate in candidate_list:
-        # 모델명에 'models/'가 붙어있을 수도 있고 아닐 수도 있어서 둘 다 체크
-        if candidate in available_models or f"models/{candidate}" in available_models:
-            final_model_name = candidate
-            break
-            
-    # 4. 모델 연결
-    if final_model_name:
-        model = genai.GenerativeModel(final_model_name)
-        st.sidebar.success(f"✅ 연결됨: {final_model_name}")
-    else:
-        # 5. 명단 대조 실패 시 비상 대책:
-        # 라이브러리가 명단을 제대로 못 줘도, 'gemini-pro'는 구버전에서도 무조건 돌아갑니다.
-        model = genai.GenerativeModel('gemini-pro')
-        st.sidebar.warning("⚠️ 구형 모델 강제 연결 (gemini-pro)")
-
+    model = genai.GenerativeModel('gemini-1.5-flash')
+    st.sidebar.success("✅ 모델 연결: gemini-1.5-flash")
 except Exception as e:
-    st.error(f"❌ 모델 설정 중 오류 발생: {e}")
-    # 최후의 수단: 그냥 강제로 Pro 연결
+    st.error(f"❌ 모델 연결 실패: {e}")
+    st.sidebar.error("모델을 찾을 수 없습니다. 라이브러리 업데이트가 시급합니다.")
+    # 앱이 멈추지 않게 비상용으로 구형 모델 시도
     model = genai.GenerativeModel('gemini-pro')
 
 
