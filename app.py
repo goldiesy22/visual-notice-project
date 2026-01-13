@@ -12,9 +12,7 @@ import io
 # ==========================================
 
 # 🚨 테스트용 (따옴표 안에 복사한 키를 바로 넣으세요!)
-GOOGLE_API_KEY = "AIzaSyDC0TbYKns966JZBv-1dWGbq-rBQs0guh4"else:
-    st.error("🚨 API 키가 없습니다! Secrets 설정을 확인해주세요.")
-    st.stop()
+GOOGLE_API_KEY = "AI~~"
 
 genai.configure(api_key=GOOGLE_API_KEY)
 
