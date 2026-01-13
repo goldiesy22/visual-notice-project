@@ -8,7 +8,7 @@ from gtts import gTTS
 import io
 
 # ==========================================
-# 1. 버전 확인 및 모델 연결 (가장 중요!)
+# 1. [진단 모드] 버전 확인 & 모델 강제 탐색
 # ==========================================
 
 if "GOOGLE_API_KEY" in st.secrets:
@@ -19,25 +19,59 @@ else:
 
 genai.configure(api_key=GOOGLE_API_KEY)
 
-# 🚨 [버전 검증] 현재 깔려있는 라이브러리 버전을 눈으로 확인합니다.
+# 👇 [진단] 라이브러리 버전 확인
 current_version = genai.__version__
-st.sidebar.markdown(f"### 🔧 도구 버전: `{current_version}`")
+st.sidebar.markdown(f"**🛠 도구 버전:** `{current_version}`")
 
-# 버전이 너무 낮으면 경고를 띄웁니다.
 if current_version < "0.8.3":
-    st.sidebar.error("🚨 버전이 너무 낮습니다! (0.8.3 이상 필요)")
-    st.sidebar.info("Manage app > Clear cache and Reboot를 꼭 다시 해주세요!")
+    st.sidebar.error("🚨 버전이 너무 낮습니다! (구형)")
+    st.sidebar.info("캐시 삭제(Clear cache)가 시급합니다.")
 
-# 🚨 [모델 지정] 404 오류가 나도 무조건 이걸 써야 합니다. (이게 정답임)
-# 구버전 라이브러리라면 여기서 404가 뜨겠지만, 업데이트되면 무조건 성공합니다.
+# 👇 [핵심] 실제 사용 가능한 모델 명단 조회
+# 추측하지 않고, 서버가 준 명단 중에서만 고릅니다.
+valid_model_name = None
 try:
-    model = genai.GenerativeModel('gemini-1.5-flash')
-    st.sidebar.success("✅ 모델 연결: gemini-1.5-flash")
+    available_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
+    
+    # 디버깅용: 명단 출력 (나중에 지우셔도 됩니다)
+    # st.sidebar.text(f"목록: {available_models}")
+
+    # 우선순위: 1.5 Flash -> Pro -> 구형 Pro
+    # (실험용 2.0이나 exp는 제외)
+    targets = [
+        "models/gemini-1.5-flash", 
+        "gemini-1.5-flash",
+        "models/gemini-1.5-flash-001",
+        "models/gemini-1.5-pro",
+        "models/gemini-pro",
+        "gemini-pro"
+    ]
+
+    for target in targets:
+        if target in available_models:
+            valid_model_name = target
+            break
+            
+    # 명단에 없어도, 목록에 있는 첫 번째 'flash'를 잡음
+    if not valid_model_name:
+        for m in available_models:
+            if "flash" in m and "exp" not in m and "2.0" not in m:
+                valid_model_name = m
+                break
+
 except Exception as e:
-    st.error(f"❌ 모델 연결 실패: {e}")
-    st.sidebar.error("모델을 찾을 수 없습니다. 라이브러리 업데이트가 시급합니다.")
-    # 앱이 멈추지 않게 비상용으로 구형 모델 시도
-    model = genai.GenerativeModel('gemini-pro')
+    st.sidebar.error(f"목록 조회 실패: {e}")
+
+# 최종 연결
+if valid_model_name:
+    model = genai.GenerativeModel(valid_model_name)
+    st.sidebar.success(f"✅ 연결 성공: `{valid_model_name}`")
+else:
+    # 정말 최악의 경우 (명단 조회도 안 될 때)
+    # 어쩔 수 없이 가장 기본 이름으로 강제 설정
+    fallback = 'gemini-1.5-flash'
+    model = genai.GenerativeModel(fallback)
+    st.sidebar.warning(f"⚠️ 강제 연결 시도: {fallback}")
 
 
 ASSETS_DIR = "assets"
