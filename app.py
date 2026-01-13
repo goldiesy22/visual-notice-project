@@ -258,17 +258,24 @@ def get_ui_language(user_input):
 # ==========================================
 # 6. [제목] 상단 배너 이미지 & 타이틀 배치
 # ==========================================
-# 1) 상단 배너 이미지 표시
-banner_path = os.path.join(ASSETS_DIR, "banner.png") # ⚠️ 파일명 확인! (jpg/png)
 
-# 배너 파일이 있으면 표시, 없으면 그냥 넘어감
-if os.path.exists(banner_path):
-    st.image(banner_path, use_container_width=True)
-else:
-    # 배너 파일이 없을 때를 대비한 대체 텍스트 (혹시 몰라서 남겨둠)
-    st.warning("⚠️ assets 폴더에 'banner.jpg' 파일을 넣어주세요.")
+# 1) 배너 파일 찾기 (jpg, png, jpeg 다 찾아봄)
+banner_candidates = ["banner.jpg", "banner.png", "banner.jpeg", "image_2c0b96.jpg"]
+banner_found = False
 
-# 2) 그 아래에 타이틀 문구 배치
+for filename in banner_candidates:
+    banner_path = os.path.join(ASSETS_DIR, filename)
+    if os.path.exists(banner_path):
+        st.image(banner_path, use_container_width=True)
+        banner_found = True
+        break # 파일을 찾았으면 반복 중단
+
+# 2) 배너가 없을 경우 (경고 대신 그냥 타이틀만 띄움)
+if not banner_found:
+    # 혹시 파일이 안 올라갔을까 봐 작게 알려줌 (나중에 삭제 가능)
+    st.caption("※ 배너 이미지를 assets 폴더에 넣어주세요.")
+
+# 3) 그 아래에 타이틀 문구 배치
 st.markdown("""
     <h1 style='color: #FF9F1C; text-align: center; margin-top: 10px; margin-bottom: 0px;'>
         🏫 모두의 AI 알림장
