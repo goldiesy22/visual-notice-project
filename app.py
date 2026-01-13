@@ -259,7 +259,7 @@ def get_ui_language(user_input):
 # 6. [제목] 상단 배너 이미지 & 타이틀 배치
 # ==========================================
 # 1) 상단 배너 이미지 표시
-banner_path = os.path.join(ASSETS_DIR, "banner.jpg") # ⚠️ 파일명 확인! (jpg/png)
+banner_path = os.path.join(ASSETS_DIR, "banner.png") # ⚠️ 파일명 확인! (jpg/png)
 
 # 배너 파일이 있으면 표시, 없으면 그냥 넘어감
 if os.path.exists(banner_path):
