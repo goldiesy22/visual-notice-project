@@ -3,7 +3,11 @@ import google.generativeai as genai
 from PIL import Image
 import os
 import json
-import base64 
+# ... 이전 코드 생략 ...
+
+import base64  # 이 줄의 앞뒤에 있는 보이지 않는 공백을 모두 제거했습니다.
+
+# ... 이후 코드 생략 ...
 # ==========================================
 # 1. 설정 (Configuration)
 # ==========================================
@@ -533,5 +537,6 @@ with st.sidebar:
 
 
 이 코드와 기능과 디자인은 다 똑같이 가는거야. 새로 발급받은 키만 원래 자리에 넣으면 되는 거 아냐? 
+
 
 
