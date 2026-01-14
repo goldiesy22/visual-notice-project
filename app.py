@@ -44,7 +44,7 @@ genai.configure(api_key=GOOGLE_API_KEY)
 
 # 🚨 [모델] latest 버전 유지
 
-model = genai.GenerativeModel('gemini-flash-latest')
+model = genai.GenerativeModel('gemini-1.5-flash')
 
 
 
@@ -1055,3 +1055,4 @@ with st.expander("📲 앱 설치 방법 보기 (Install App Guide)", expanded=F
     </div>
 
     """, unsafe_allow_html=True)
+
