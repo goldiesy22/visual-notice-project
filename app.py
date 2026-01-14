@@ -7,7 +7,7 @@ import sys
 # ======================================================
 # 👇 [진실의 방] 여기에 'My School App' 키를 붙여넣으세요
 # ======================================================
-TEST_KEY = "AIzaSyCQqwCFatYYm9RVsPPaxeBv7qn765KcgvE"
+TEST_KEY = "AIzaSyBEBnMqw9LTRQhQgUZdGf8dwwTKJCMeiR8"
 # ======================================================
 
 st.set_page_config(page_title="긴급 진단", layout="wide")
