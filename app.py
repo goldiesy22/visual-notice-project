@@ -7,7 +7,7 @@ import sys
 # ======================================================
 # 👇 [진실의 방] 여기에 'My School App' 키를 붙여넣으세요
 # ======================================================
-TEST_KEY = "AIzaSyBaXUxBQFUOSwhi7dFS_jIz8VhveOmFMtA"
+TEST_KEY = "AIzaSyA-1Pu8fP-5HPIQWBLKkgJYuZWGkVmcXaQ"
 # ======================================================
 
 st.set_page_config(page_title="긴급 진단", layout="wide")
@@ -57,3 +57,4 @@ except Exception as e:
     elif "429" in err_msg:
 
         st.warning("👉 [진단] '사용량 초과'입니다. 무료 사용량을 다 썼거나, 실험용 모델입니다.")
+
