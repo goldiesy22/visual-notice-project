@@ -19,7 +19,7 @@ else:
 genai.configure(api_key=GOOGLE_API_KEY)
 
 # 🚨 [모델] 속도 제한 없고 안정적인 버전
-model = genai.GenerativeModel('gemini-flash-latest') 
+model = genai.GenerativeModel('gemini-1.5-flash') 
 
 ASSETS_DIR = "assets"
 
@@ -534,3 +534,4 @@ with st.sidebar:
 
 
 이 코드와 기능과 디자인은 다 똑같이 가는거야. 새로 발급받은 키만 원래 자리에 넣으면 되는 거 아냐? 
+
