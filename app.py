@@ -962,21 +962,15 @@ if img_file and final_target_lang:
 
 
 
-            # 텍스트 표시
+            # 텍스트 표시 부분 수정
+summary_text = data.get('summary', '요약 없음')
 
-            st.markdown(f"""
-
-                <div class='summary-box'>
-
-                    {summary_text.replace('\n', '<br>')}
-
-                </div>
-
-            """, unsafe_allow_html=True)
-
-            
-
-            st.write("")
+# 줄바꿈 처리를 위해 .replace() 사용
+st.markdown(f"""
+    <div class='summary-box'>
+        {summary_text.replace('\n', '<br>')}
+    </div>
+""", unsafe_allow_html=True)
 
             
 
@@ -1055,5 +1049,6 @@ with st.expander("📲 앱 설치 방법 보기 (Install App Guide)", expanded=F
     </div>
 
     """, unsafe_allow_html=True)
+
 
 
