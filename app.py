@@ -7,14 +7,14 @@ import sys
 # ======================================================
 # 👇 [진실의 방] 여기에 'My School App' 키를 붙여넣으세요
 # ======================================================
-TEST_KEY = "AIzaSyA-1Pu8fP-5HPIQWBLKkgJYuZWGkVmcXaQ"
+FINAL_KEY = "AIzaSyA-1Pu8fP-5HPIQWBLKkgJYuZWGkVmcXaQ"
 # ======================================================
 
 st.set_page_config(page_title="긴급 진단", layout="wide")
 st.title("🚑 API 키 긴급 정밀 진단")
 
 # 1. 키 검사
-if "여기에" in TEST_KEY:
+if "여기에" in FINAL_KEY:
     st.error("🚨 12번째 줄에 API 키를 입력하지 않았습니다!")
     st.stop()
 
@@ -57,4 +57,5 @@ except Exception as e:
     elif "429" in err_msg:
 
         st.warning("👉 [진단] '사용량 초과'입니다. 무료 사용량을 다 썼거나, 실험용 모델입니다.")
+
 
