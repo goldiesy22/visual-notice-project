@@ -14,7 +14,7 @@ import base64  # 이 줄의 앞뒤에 있는 보이지 않는 공백을 모두 �
 
 # ⚠️ API 키 설정 (Secrets 사용)
 if "GOOGLE_API_KEY" in st.secrets:
-    GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
+GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
 else:
     st.error("🚨 API 키가 없습니다! Streamlit 웹사이트의 'Secrets' 설정을 확인해주세요.")
     st.stop()
@@ -537,6 +537,7 @@ with st.sidebar:
 
 
 이 코드와 기능과 디자인은 다 똑같이 가는거야. 새로 발급받은 키만 원래 자리에 넣으면 되는 거 아냐? 
+
 
 
 
