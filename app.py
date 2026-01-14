@@ -7,7 +7,7 @@ import sys
 # ======================================================
 # 👇 [진실의 방] 여기에 'My School App' 키를 붙여넣으세요
 # ======================================================
-TEST_KEY = "AIzaSyCJFVaCL5O7vc_BpeJfqQDKGOLd_ov0URc"
+TEST_KEY = "AIzaSyBaXUxBQFUOSwhi7dFS_jIz8VhveOmFMtA"
 # ======================================================
 
 st.set_page_config(page_title="긴급 진단", layout="wide")
@@ -55,4 +55,5 @@ except Exception as e:
     elif "404" in err_msg and "not found" in err_msg:
         st.warning("👉 [진단] '모델 없음'입니다. 이 키는 'Default Project' 키일 확률이 높습니다. 'My School App' 프로젝트 키가 맞나요?")
     elif "429" in err_msg:
+
         st.warning("👉 [진단] '사용량 초과'입니다. 무료 사용량을 다 썼거나, 실험용 모델입니다.")
